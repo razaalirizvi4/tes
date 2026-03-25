@@ -1,0 +1,833 @@
+"use client";
+
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import DashboardLayout from "../../../components/dashboard/DashboardLayout";
+import { OrderWithDetails } from "@/services/orderService";
+import { format } from "date-fns";
+import ReceiptModal from "@/components/pos/ReceiptModal";
+import { useAuthStore } from "@/store/useStore";
+import { XMarkIcon } from "@heroicons/react/24/outline";
+import {
+  supabaseClient,
+  RealtimeChannel,
+  DatabaseOrder,
+} from "@/lib/supabaseClient";
+
+const ORDER_STATUSES = [
+  "PENDING",
+  "CONFIRMED",
+  "PREPARING",
+  "OUT_FOR_DELIVERY",
+  "DELIVERED",
+  "CANCELLED",
+];
+
+const PAGE_SIZE = 10;
+
+interface Restaurant {
+  id: string;
+  name: string;
+}
+
+const OrdersPage = () => {
+  const { user } = useAuthStore((state) => state);
+
+  const isSuperAdmin = useAuthStore(
+    (state) => state.user?.role === "SUPER_ADMIN"
+  );
+
+  const vendorId = !isSuperAdmin ? user?.vendorProfile?.id : undefined;
+
+  const [orders, setOrders] = useState<OrderWithDetails[]>([]);
+  const [selectedOrder, setSelectedOrder] = useState<OrderWithDetails | null>(
+    null
+  );
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalOrders, setTotalOrders] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
+  const [receiptData, setReceiptData] = useState<any>(null);
+  const [isFetchingReceipt, setIsFetchingReceipt] = useState(false);
+  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+  const [selectedRestaurantId, setSelectedRestaurantId] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Supabase Realtime channel reference
+  const channelRef = useRef<RealtimeChannel | null>(null);
+
+  const orderBelongsToScope = useCallback(
+    (order: OrderWithDetails) => {
+      if (isSuperAdmin) return true;
+      return order.restaurant.vendorId === vendorId;
+    },
+    [isSuperAdmin, vendorId]
+  );
+
+  const fetchOrders = useCallback(
+    async (pageToFetch = 1) => {
+      if (!isSuperAdmin && !vendorId) return;
+
+      setIsLoading(true);
+
+      try {
+        const params = new URLSearchParams({
+          page: pageToFetch.toString(),
+          pageSize: PAGE_SIZE.toString(),
+        });
+
+        if (!isSuperAdmin && vendorId) {
+          params.append("vendorId", vendorId);
+        }
+
+        // Add restaurant filter for super admin
+        if (isSuperAdmin && selectedRestaurantId) {
+          params.append("restaurantId", selectedRestaurantId);
+        }
+
+        const response = await fetch(`/api/orders?${params.toString()}`);
+        const result = await response.json();
+
+        // Backend already filters by vendorId, so we can use the data directly
+        const orders: OrderWithDetails[] = Array.isArray(result)
+          ? result
+          : result?.data ?? [];
+
+        setOrders(orders);
+
+        if (result?.meta) {
+          // Use backend pagination metadata
+          setTotalOrders(result.meta.total ?? 0);
+          setTotalPages(result.meta.totalPages ?? 1);
+        } else {
+          // Fallback for non-paginated responses
+          setTotalOrders(orders.length);
+          setTotalPages(1);
+        }
+      } catch (error) {
+        console.error("Error fetching orders:", error);
+        setOrders([]);
+        setTotalOrders(0);
+        setTotalPages(1);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [isSuperAdmin, vendorId, selectedRestaurantId]
+  );
+  /**
+   * Fetch full order details by ID from the API
+   * This is needed because Supabase Realtime only sends the raw row data without relations
+   */
+  const fetchOrderById = useCallback(
+    async (orderId: string): Promise<OrderWithDetails | null> => {
+      try {
+        const response = await fetch(`/api/orders?orderId=${orderId}`);
+        if (!response.ok) {
+          console.error("Failed to fetch order details:", response.statusText);
+          return null;
+        }
+        const result = await response.json();
+        // Handle both array and single object responses
+        const order = Array.isArray(result) ? result[0] : result;
+        return order as OrderWithDetails;
+      } catch (error) {
+        console.error("Error fetching order details:", error);
+        return null;
+      }
+    },
+    []
+  );
+
+  /**
+   * Supabase Realtime subscription for new orders (INSERT events only)
+   */
+  useEffect(() => {
+    if (!isSuperAdmin && !vendorId) return;
+
+    console.log("🔌 Initializing Supabase Realtime subscription...");
+
+    // Subscribe to INSERT events on the Order table
+    const channel = supabaseClient
+      .channel("orders-realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "Order",
+        },
+        async (payload) => {
+          const newOrderData = payload.new as DatabaseOrder;
+
+          console.log("📦 New order INSERT event received:", newOrderData.id);
+          console.log("📦 Order data:", newOrderData);
+
+          // Fetch full order details with relations (user, restaurant, orderItems)
+          const fullOrder = await fetchOrderById(newOrderData.id);
+
+          if (!fullOrder) {
+            console.error(
+              "Failed to fetch full order details for:",
+              newOrderData.id
+            );
+            return;
+          }
+
+          console.log("✅ Full order details fetched:", fullOrder.id);
+
+          // Check if order belongs to current user's scope
+          if (!orderBelongsToScope(fullOrder)) {
+            console.log("⚠️ Order not in scope, ignoring:", fullOrder.id);
+            return;
+          }
+
+          console.log("✅ Adding new order to UI:", fullOrder.id);
+
+          // Update total orders count
+          setTotalOrders((prev) => {
+            const nextTotal = prev + 1;
+            setTotalPages(Math.ceil(nextTotal / PAGE_SIZE));
+            return nextTotal;
+          });
+
+          // Add new order to the beginning of the list (only if on page 1)
+          if (page === 1) {
+            setOrders((prev) => {
+              // Prevent duplicates
+              const exists = prev.find((order) => order.id === fullOrder.id);
+              if (exists) {
+                console.log(
+                  "⚠️ Order already exists in list, skipping:",
+                  fullOrder.id
+                );
+                return prev;
+              }
+
+              const updatedOrders = [fullOrder, ...prev];
+              // Keep only the first page worth of orders
+              return updatedOrders.slice(0, PAGE_SIZE);
+            });
+          }
+        }
+      )
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          console.log(
+            "✅ Successfully subscribed to orders table INSERT events"
+          );
+        } else if (status === "CHANNEL_ERROR") {
+          console.error("❌ Error subscribing to orders table");
+        } else {
+          console.log("🔄 Subscription status:", status);
+        }
+      });
+
+    channelRef.current = channel;
+
+    // Cleanup: unsubscribe when component unmounts or dependencies change
+    return () => {
+      console.log("🔌 Unsubscribing from Supabase Realtime...");
+      if (channelRef.current) {
+        supabaseClient.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
+  }, [isSuperAdmin, vendorId, orderBelongsToScope, fetchOrderById, page]);
+
+  // Fetch restaurants for super admin
+  useEffect(() => {
+    if (isSuperAdmin) {
+      const fetchRestaurants = async () => {
+        try {
+          const response = await fetch("/api/restaurants");
+          if (response.ok) {
+            const data = await response.json();
+            setRestaurants(
+              data.map((r: Restaurant) => ({ id: r.id, name: r.name }))
+            );
+          }
+        } catch (error) {
+          console.error("Error fetching restaurants:", error);
+        }
+      };
+      fetchRestaurants();
+    }
+  }, [isSuperAdmin]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [isSuperAdmin, vendorId, selectedRestaurantId]);
+
+  useEffect(() => {
+    if (!isSuperAdmin && !vendorId) return;
+    fetchOrders(page);
+  }, [fetchOrders, page, isSuperAdmin, vendorId]);
+
+  // ⭐ FIX: DO NOT emit to socket here — ONLY backend should broadcast
+  const handleStatusUpdate = async (orderId: string, newStatus: string) => {
+    try {
+      const response = await fetch(`/api/orders`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ orderId, status: newStatus }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update order status");
+      }
+
+      const updatedOrder = await response.json();
+
+      // Do NOT socket.emit() here.
+      // Backend should emit:  io.emit("order-status-updated", updatedOrder)
+
+      // Update UI optimistically
+      setOrders((prev) =>
+        prev.map((o) => (o.id === updatedOrder.id ? updatedOrder : o))
+      );
+
+      if (selectedOrder?.id === orderId) {
+        setSelectedOrder(updatedOrder);
+      }
+    } catch (error) {
+      console.error("Error updating order status:", error);
+    }
+  };
+
+  const handleFetchReceipt = async (orderId: string) => {
+    setIsFetchingReceipt(true);
+    try {
+      const res = await fetch(`/api/pos/order/${orderId}/receipt`);
+      const data = await res.json();
+      if (res.ok) {
+        setReceiptData(data);
+        setIsReceiptModalOpen(true);
+      } else {
+        alert(data.error || "Receipt not found for this order");
+      }
+    } catch (error) {
+      console.error("Error fetching receipt:", error);
+    } finally {
+      setIsFetchingReceipt(false);
+    }
+  };
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "PENDING":
+        return "bg-yellow-100 text-yellow-800";
+      case "CONFIRMED":
+        return "bg-blue-100 text-blue-800";
+      case "PREPARING":
+        return "bg-purple-100 text-purple-800";
+      case "OUT_FOR_DELIVERY":
+        return "bg-indigo-100 text-indigo-800";
+      case "DELIVERED":
+        return "bg-green-100 text-green-800";
+      case "CANCELLED":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const handleRestaurantFilterChange = (restaurantId: string) => {
+    setSelectedRestaurantId(restaurantId);
+    setPage(1);
+    setIsDropdownOpen(false);
+    setSearchQuery("");
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    setIsDropdownOpen(true);
+  };
+
+  const filteredRestaurants = restaurants.filter((restaurant) =>
+    restaurant.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const selectedRestaurantName =
+    selectedRestaurantId === ""
+      ? "All Restaurants"
+      : restaurants.find((r) => r.id === selectedRestaurantId)?.name ||
+      "All Restaurants";
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsDropdownOpen(false);
+        setSearchQuery("");
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  // Prevent body scroll when modal is open on smaller screens
+  useEffect(() => {
+    if (selectedOrder) {
+      const checkScreenSize = () => {
+        if (window.innerWidth < 1660) {
+          // Custom breakpoint is 1660px
+          document.body.style.overflow = "hidden";
+        } else {
+          document.body.style.overflow = "";
+        }
+      };
+
+      checkScreenSize();
+      window.addEventListener("resize", checkScreenSize);
+
+      return () => {
+        document.body.style.overflow = "";
+        window.removeEventListener("resize", checkScreenSize);
+      };
+    } else {
+      document.body.style.overflow = "";
+    }
+  }, [selectedOrder]);
+
+  return (
+    <DashboardLayout>
+      <div className="p-6">
+        <div className="flex justify-between flex-wrap items-center mb-4">
+          <h1 className="text-2xl font-semibold">Orders</h1>
+          {isSuperAdmin && (
+            <div className="flex items-center gap-2">
+              <label
+                htmlFor="restaurant-filter"
+                className="text-sm font-medium text-gray-700"
+              >
+                Filter by Restaurant:
+              </label>
+              <div className="relative" ref={dropdownRef}>
+                <div className="relative">
+                  <input
+                    id="restaurant-filter"
+                    type="text"
+                    value={
+                      isDropdownOpen ? searchQuery : selectedRestaurantName
+                    }
+                    onChange={handleSearchChange}
+                    onFocus={() => setIsDropdownOpen(true)}
+                    placeholder="Search restaurants..."
+                    className="block w-64 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-3 py-2 border pr-10"
+                  />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg
+                      className="h-5 w-5 text-gray-400"
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                {isDropdownOpen && (
+                  <div className="absolute z-10 mt-1 w-64 bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
+                    <div
+                      onClick={() => handleRestaurantFilterChange("")}
+                      className={`cursor-pointer select-none relative py-2 px-4 hover:bg-indigo-50 ${selectedRestaurantId === ""
+                          ? "bg-indigo-100 text-indigo-900"
+                          : "text-gray-900"
+                        }`}
+                    >
+                      <span className="block truncate font-medium">
+                        All Restaurants
+                      </span>
+                    </div>
+                    {filteredRestaurants.length > 0 ? (
+                      filteredRestaurants.map((restaurant) => (
+                        <div
+                          key={restaurant.id}
+                          onClick={() =>
+                            handleRestaurantFilterChange(restaurant.id)
+                          }
+                          className={`cursor-pointer select-none relative py-2 px-4 hover:bg-indigo-50 ${selectedRestaurantId === restaurant.id
+                              ? "bg-indigo-100 text-indigo-900"
+                              : "text-gray-900"
+                            }`}
+                        >
+                          <span className="block truncate">
+                            {restaurant.name}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="cursor-default select-none relative py-2 px-4 text-gray-500">
+                        <span className="block truncate">
+                          No restaurants found
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="relative">
+          {/* Order Details Overlay Modal for screens smaller than xl */}
+          {selectedOrder && (
+            <div className="custom-1660:hidden fixed inset-0 z-50 overflow-y-auto">
+              {/* Backdrop */}
+              <div
+                className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+                onClick={() => setSelectedOrder(null)}
+              ></div>
+              {/* Modal Content */}
+              <div className="flex min-h-full items-center justify-center p-4">
+                <div className="relative w-full max-w-md bg-white rounded-lg shadow-xl transform transition-all">
+                  <div className="p-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-lg font-semibold">Order Details</h2>
+                      <button
+                        onClick={() => setSelectedOrder(null)}
+                        className="text-gray-500 hover:text-gray-700"
+                      >
+                        <XMarkIcon className="w-5 h-5" />
+                      </button>
+                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <h3 className="text-sm font-medium text-gray-500">
+                          Customer
+                        </h3>
+                        <p className="mt-1">
+                          {selectedOrder.user.name || selectedOrder.user.email}
+                        </p>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-medium text-gray-500">
+                          Delivery Address
+                        </h3>
+                        <p className="mt-1 line-clamp-2 text-sm text-gray-900">
+                          {selectedOrder.deliveryAddress}
+                        </p>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-medium text-gray-500">
+                          Phone Number
+                        </h3>
+                        <p className="mt-1">
+                          {selectedOrder.user.phoneNumber &&
+                            selectedOrder.user.phoneNumber}
+                        </p>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-medium text-gray-500">
+                          Items
+                        </h3>
+                        <div className="mt-2 space-y-2">
+                          {selectedOrder.orderItems.map((item) => (
+                            <div
+                              key={item.id}
+                              className="flex justify-between text-sm"
+                            >
+                              <span>
+                                {item.quantity}x {item.name}
+                              </span>
+                              <span>
+                                ${(item.price * item.quantity).toFixed(2)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="pt-4 border-t space-y-2">
+                        {(() => {
+                          const subtotal = selectedOrder.orderItems.reduce(
+                            (sum, item) => sum + item.price * item.quantity,
+                            0
+                          );
+                          const deliveryFee =
+                            selectedOrder.totalAmount - subtotal;
+                          return (
+                            <>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-600">Subtotal</span>
+                                <span>${subtotal.toFixed(2)}</span>
+                              </div>
+                              {deliveryFee > 0 && (
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-gray-600">
+                                    Delivery Fee
+                                  </span>
+                                  <span>${deliveryFee.toFixed(2)}</span>
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
+                        <div className="flex justify-between font-medium pt-2 border-t">
+                          <span>Total Amount</span>
+                          <span>${selectedOrder.totalAmount.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Main content layout */}
+          <div className="flex gap-6 flex-col xl:flex-row">
+            <div className="flex-1 min-w-0">
+              <div className="overflow-x-auto bg-white rounded-lg shadow">
+                <table className="min-w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Order ID
+                      </th>
+                      <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Customer
+                      </th>
+                      <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Restaurant
+                      </th>
+                      <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Date
+                      </th>
+                      <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Total
+                      </th>
+                      <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {isLoading ? (
+                      <tr>
+                        <td
+                          colSpan={7}
+                          className="px-4 py-4 text-center text-sm text-gray-500"
+                        >
+                          Loading orders...
+                        </td>
+                      </tr>
+                    ) : orders.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={7}
+                          className="px-4 py-4 text-center text-sm text-gray-500"
+                        >
+                          No orders found.
+                        </td>
+                      </tr>
+                    ) : (
+                      orders.map((order) => (
+                        <tr
+                          key={order.id}
+                          className="hover:bg-gray-50 cursor-pointer"
+                          onClick={() => setSelectedOrder(order)}
+                        >
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {order.id.slice(0, 8)}
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {order.user.name || order.user.email}
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {order.restaurant.name}
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {format(
+                              new Date(order.createdAt),
+                              "MMM d, yyyy HH:mm"
+                            )}
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                            ${order.totalAmount.toFixed(2)}
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <span
+                              className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
+                                order.status
+                              )}`}
+                            >
+                              {order.status}
+                            </span>
+                          </td>
+                          <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                            <select
+                              value={order.status}
+                              onChange={(e) =>
+                                handleStatusUpdate(order.id, e.target.value)
+                              }
+                              onClick={(e) => e.stopPropagation()}
+                              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            >
+                              {ORDER_STATUSES.map((status) => (
+                                <option key={status} value={status}>
+                                  {status}
+                                </option>
+                              ))}
+                            </select>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-4">
+                <p className="text-sm text-gray-600">
+                  Showing {totalOrders === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}-
+                  {totalOrders === 0
+                    ? 0
+                    : Math.min(page * PAGE_SIZE, totalOrders)}{" "}
+                  of {totalOrders} orders
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                    disabled={page === 1}
+                    className="px-4 py-2 text-sm border rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  <span className="text-sm text-gray-700">
+                    Page {page} of {totalPages}
+                  </span>
+                  <button
+                    onClick={() =>
+                      setPage((prev) => Math.min(prev + 1, totalPages))
+                    }
+                    disabled={page === totalPages}
+                    className="px-4 py-2 text-sm border rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Sidebar for xl and larger screens */}
+            {selectedOrder && (
+              <div className="hidden custom-1660:block w-96 bg-white p-6 rounded-lg shadow flex-shrink-0">
+                <div className="flex justify-between border-b border-gray-200 pb-4 items-center mb-4">
+                  <h2 className="text-lg font-semibold">Order Details</h2>
+                  <button
+                    onClick={() => setSelectedOrder(null)}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    <XMarkIcon className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-600">
+                      Customer
+                    </h3>
+                    <p className="mt-1 font-semibold">
+                      {selectedOrder.user.name || selectedOrder.user.email}
+                    </p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-600">
+                      Delivery Address
+                    </h3>
+                    <p className="mt-1 line-clamp-2 font-semibold text-gray-900">
+                      {selectedOrder.deliveryAddress}
+                    </p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-600">
+                      Phone Number
+                    </h3>
+                    <p className="mt-1 font-semibold">
+                      {selectedOrder.user.phoneNumber &&
+                        selectedOrder.user.phoneNumber}
+                    </p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-600">Items</h3>
+                    <div className="mt-2 space-y-2">
+                      {selectedOrder.orderItems.map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex justify-between text-sm font-semibold"
+                        >
+                          <span>
+                            {item.quantity}x {item.name}
+                          </span>
+                          <span>
+                            ${(item.price * item.quantity).toFixed(2)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="pt-4 border-t space-y-2">
+                    {(() => {
+                      const subtotal = selectedOrder.orderItems.reduce(
+                        (sum, item) => sum + item.price * item.quantity,
+                        0
+                      );
+                      const deliveryFee = selectedOrder.totalAmount - subtotal;
+                      return (
+                        <>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Subtotal</span>
+                            <span className="font-semibold">
+                              ${subtotal.toFixed(2)}
+                            </span>
+                          </div>
+                          {deliveryFee > 0 && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-600">
+                                Delivery Fee
+                              </span>
+                              <span className="font-semibold">
+                                ${deliveryFee.toFixed(2)}
+                              </span>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
+                    <div className="flex justify-between font-medium pt-2 border-t">
+                      <span>Total Amount</span>
+                      <span>${selectedOrder.totalAmount.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+        <ReceiptModal
+          isOpen={isReceiptModalOpen}
+          onClose={() => setIsReceiptModalOpen(false)}
+          receiptData={receiptData}
+        />
+    </DashboardLayout>
+
+};
+
+
+export default OrdersPage;

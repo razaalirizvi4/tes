@@ -1,0 +1,23 @@
+[
+    {
+      "orderId": "#ORD-001",
+      "customerName": "Alice Johnson",
+      "orderDate": "2025-01-10",
+      "total": "$25.00",
+      "status": "Delivered"
+    },
+    {
+      "orderId": "#ORD-002",
+      "customerName": "Bob Smith",
+      "orderDate": "2025-01-11",
+      "total": "$30.00",
+      "status": "Pending"
+    },
+    {
+      "orderId": "#ORD-003",
+      "customerName": "Charlie Brown",
+      "orderDate": "2025-01-12",
+      "total": "$15.00",
+      "status": "Cancelled"
+    }
+  ]
