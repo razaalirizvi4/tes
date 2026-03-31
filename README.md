@@ -1,4 +1,4 @@
-# Food Delivery App 1.1.01 with Rider App + i8n Localization 
+# Food Delivery App 1.1.2 with Rider App + i8n Localization + fixes
 
 A modern food delivery application built with Next.js, Supabase, Prisma, and Tailwind CSS.
 

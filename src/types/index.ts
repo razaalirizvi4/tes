@@ -107,6 +107,9 @@ export interface SelectedAddon {
   priceAdjustment: number;
 }
 
+export type StoreType = 'RESTAURANT' | 'GROCERY' | 'FLOWER_SHOP' | 'PHARMACY' | 'BAKERY' | 'GENERAL';
+export type PricingType = 'FIXED' | 'PER_UNIT' | 'WEIGHTED';
+
 export interface MenuItem {
   id: string;
   label: string;
@@ -114,11 +117,22 @@ export interface MenuItem {
   price: number;
   image: string | null;
   category: string;
-  spicy?: SpicyLevel | null; // Optional spicy level: MILD, MEDIUM, or HOT
+  spicy?: SpicyLevel | null; 
   restaurantId: string;
   createdAt: string | Date;
   updatedAt: string | Date;
   addonGroups?: MenuItemAddon[];
+  // Retail fields
+  barcode?: string | null;
+  brand?: string | null;
+  sku?: string | null;
+  unit?: string | null;
+  unitQuantity?: number | null;
+  weight?: number | null;
+  stockQuantity?: number | null;
+  trackStock?: boolean;
+  lowStockThreshold?: number | null;
+  pricingType?: PricingType;
 }
 
 export interface Restaurant {
@@ -141,8 +155,17 @@ export interface Restaurant {
   deliveryCharges?: number | null;
   spottedDate: Date | string | null;
   closedDate: Date | string | null;
-  country?: string | null; // Country code (e.g., "US", "PK")
-  currency?: string | null; // Currency code (e.g., "USD", "PKR")
+  country?: string | null; 
+  currency?: string | null;
+  // Multi-vertical fields
+  storeType: StoreType;
+  logo?: string | null;
+  description?: string | null;
+  operatingHours?: any;
+  preparationTime?: number | null;
+  acceptsScheduledOrders?: boolean;
+  deliverySlotDuration?: number | null;
+  tags?: string[];
 }
 
 export interface Order {
@@ -154,6 +177,8 @@ export interface Order {
   specialInstructions: string,
   paymentMethod: string;
   deliveryAddress: string;
+  phoneNumber?: string | null;
+  orderType?: string | null;
   orderItems: OrderItem[];
   driverId?: string;
   driver?: Driver;
@@ -169,6 +194,14 @@ export interface Order {
   driverRating?: number;
   createdAt: Date;
   updatedAt: Date;
+  recipientName: string | null;
+  recipientPhone: string | null;
+  isGift: boolean;
+  giftMessage: string | null;
+  orderVertical: string | null;
+  scheduledDate?: string | Date | null;
+  scheduledSlot?: string | null;
+  substitutionPref?: string | null;
 }
 
 export interface OrderItem {

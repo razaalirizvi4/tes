@@ -118,6 +118,7 @@ export async function PATCH(
                 data: {
                     totalAmount,
                     status: status === 'PREPARING' ? 'PREPARING' : undefined,
+                    specialInstructions: notes !== undefined ? notes : existingOrder.notes,
                     orderItems: {
                         deleteMany: {},
                         create: currentItems.map((item: any) => ({

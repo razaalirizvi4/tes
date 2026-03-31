@@ -1,18 +1,18 @@
 "use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { toast } from "react-hot-toast";
-import { useAuthStore, useCartStore } from "@/store/useStore";
-import { authService } from "@/services/authService";
-import axios from "axios";
+import LanguageSelectorDialog from "@/components/LanguageSelectorDialog";
+import Loader from "@/components/Loader";
+import { Link as LocaleLink } from "@/i18n/navigation";
 import { supabase } from "@/lib/supabase";
+import { authService } from "@/services/authService";
+import { useAuthStore, useCartStore } from "@/store/useStore";
+import axios from "axios";
+import { useTranslations } from "next-intl";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { toast } from "react-hot-toast";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
 import { FcGoogle } from "react-icons/fc";
-import Loader from "@/components/Loader";
-import { useTranslations } from "next-intl";
-import { Link as LocaleLink } from "@/i18n/navigation";
-import LanguageSelectorDialog from "@/components/LanguageSelectorDialog";
 
 export default function LoginClient() {
     const router = useRouter();
@@ -203,7 +203,7 @@ export default function LoginClient() {
 
                             <div className="relative flex py-0 items-center w-full px-10">
                                 <div className="flex-grow border-t border-gray-400"></div>
-                                <span className="flex-shrink mx-4 text-gray-400">or</span>
+                                <span className="flex-shrink mx-4 text-gray-400">{t('or')}</span>
                                 <div className="flex-grow border-t border-gray-400"></div>
                             </div>
 

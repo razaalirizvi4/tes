@@ -18,7 +18,12 @@ interface OrderWithRestaurant extends OrderType {
     name: string;
     currency?: string | null;
     coverImage?: string | null;
+    storeType?: string;
   };
+  recipientName: string | null;
+  recipientPhone: string | null;
+  scheduledDate: string | null;
+  scheduledSlot: string | null;
 }
 
 
@@ -198,6 +203,7 @@ function UserOrders() {
       setRestaurant({
         id: order.restaurant.id,
         name: order.restaurant.name || "Restaurant",
+        storeType: order.restaurant.storeType || 'RESTAURANT',
       });
 
       // Add all order items to cart
@@ -216,6 +222,7 @@ function UserOrders() {
             image: itemImage,
             restaurantId: order.restaurant.id,
             restaurantName: order.restaurant.name || "Restaurant",
+            storeType: order.restaurant.storeType || 'RESTAURANT',
           });
         }
       }
@@ -238,10 +245,10 @@ function UserOrders() {
   const activeOrderStatuses = ['PENDING', 'CONFIRMED', 'PREPARING', 'OUT_FOR_DELIVERY'];
   const pastOrderStatuses = ['DELIVERED', 'CANCELLED'];
 
-  const activeOrders = orders.filter((order: OrderWithRestaurant) =>
+  const activeOrders = (orders as OrderWithRestaurant[]).filter((order) =>
     activeOrderStatuses.includes(order.status)
   );
-  const pastOrders = orders.filter((order: OrderWithRestaurant) =>
+  const pastOrders = (orders as OrderWithRestaurant[]).filter((order) =>
     pastOrderStatuses.includes(order.status)
   );
 
@@ -285,8 +292,17 @@ function UserOrders() {
                             order.status.replace(/_/g, ' ')}
               </span>
 
+              {order.scheduledDate && (
+                <div className="flex items-center gap-2 mt-2 p-1.5 bg-blue-50 rounded-lg border border-blue-100 w-fit">
+                  <FaCalendarAlt className="text-blue-500 text-xs" />
+                  <span className="text-xs font-bold text-blue-700">
+                    Scheduled: {new Date(order.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    {order.scheduledSlot && ` (${order.scheduledSlot})`}
+                  </span>
+                </div>
+              )}
             </div>
-            <div className="flex items-center gap-4 text-gray-600 text-sm flex-wrap">
+            <div className="flex items-center gap-4 text-gray-600 text-sm flex-wrap mt-3">
               <span className="flex items-center gap-1">
                 <FaCalendarAlt className="text-primary" />
                 {new Date(order.createdAt).toLocaleDateString('en-US', {
@@ -355,6 +371,26 @@ function UserOrders() {
         )}
       </div>
 
+      {order.recipientName && (
+        <div className="mt-4 p-3 bg-pink-50 rounded-lg border border-pink-100 flex items-center gap-3">
+          <div className="bg-white p-2 rounded-full shadow-sm">
+            <span className="text-xl">🎁</span>
+          </div>
+          <div>
+            <h3 className="text-xs font-bold text-pink-600 uppercase tracking-wider">
+              {tOrder("recipient.isGift")}
+            </h3>
+            <p className="text-sm font-bold text-gray-900">
+              {order.recipientName}
+            </p>
+            {order.recipientPhone && (
+              <p className="text-xs text-gray-600">
+                {order.recipientPhone}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
       {/* Special Instructions */}
       {order.specialInstructions && (
         <div className="mt-4 p-3 bg-blue-50 rounded-lg border-l-4 border-primary">

@@ -671,29 +671,29 @@ const RestaurantManager = () => {
                   </div>
                 </div>
 
-                {restaurant.menuItems && restaurant.menuItems.length > 0 && (
-                  <div className="border-t pt-4">
-                    <h4 className="font-semibold text-gray-900 text-lg mb-4">
-                      {tVendor('menuItems')}
-                    </h4>
-                    <div className="grid grid-cols-1 xs:grid-cols-2 gap-3 mb-4">
-                      <button
-                        onClick={() => setManagingAddonsFor(restaurant.id)}
-                        className="flex items-center justify-center px-4 py-2 text-sm font-medium bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors border border-blue-200 w-full"
-                      >
-                        <span className="text-center">{tVendor("manageAddons")}</span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSelectedRestaurant(restaurant);
-                          setIsMenuItemFormOpen(true);
-                        }}
-                        className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors w-full"
-                      >
-                        <span className="text-center">{tVendor("addMenuItem")}</span>
-                        <PlusIcon className="h-4 w-4 shrink-0" />
-                      </button>
-                    </div>
+                <div className="border-t pt-4">
+                  <h4 className="font-semibold text-gray-900 text-lg mb-4">
+                    {tVendor('menuItems')}
+                  </h4>
+                  <div className="grid grid-cols-1 xs:grid-cols-2 gap-3 mb-4">
+                    <button
+                      onClick={() => setManagingAddonsFor(restaurant.id)}
+                      className="flex items-center justify-center px-4 py-2 text-sm font-medium bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors border border-blue-200 w-full"
+                    >
+                      <span className="text-center">{tVendor("manageAddons")}</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelectedRestaurant(restaurant);
+                        setIsMenuItemFormOpen(true);
+                      }}
+                      className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors w-full"
+                    >
+                      <span className="text-center">{tVendor("addMenuItem")}</span>
+                      <PlusIcon className="h-4 w-4 shrink-0" />
+                    </button>
+                  </div>
+                  {restaurant.menuItems && restaurant.menuItems.length > 0 && (
                     <div className="space-y-2 max-h-[250px] overflow-y-auto pr-2">
                       {restaurant.menuItems.map((item) => (
                         <div key={item.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
@@ -724,8 +724,8 @@ const RestaurantManager = () => {
                         </div>
                       ))}
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           );

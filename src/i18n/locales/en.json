@@ -1,5 +1,8 @@
 {
   "common": {
+    "getCoordinatesFromGoogleMap": "Get Coordinates From Google Map",
+    "currency": "Currency",
+    "country": "Country",
     "noItems": "No items found",
     "language": "Language",
     "loading": "Loading...",
@@ -16,6 +19,7 @@
     "next": "Next",
     "previous": "Previous",
     "search": "Search",
+    "searchMenuItems": "Search menu items",
     "filter": "Filter",
     "sort": "Sort",
     "noResults": "No results found",
@@ -60,6 +64,7 @@
     "singleImage": "Single Image",
     "multipleImages": "Multiple Images (Carousel)",
     "coverImageType": "Cover Image Type",
+    "minOrderHint": "Minimum order amount required for delivery",
     "uploadCoverImage": "Upload Cover Image",
     "uploadMultipleImages": "Upload Multiple Images",
     "chainName": "Chain Name",
@@ -76,7 +81,20 @@
     "serviceCharge": "Service Charge",
     "printReceipt": "Print Receipt",
     "noCustomizations": "No customizations available for this item.",
-    "activeSince": "Active since"
+    "activeSince": "Active since",
+    "storeType": "Store Type",
+    "storeTypes": {
+      "RESTAURANT": "Restaurant",
+      "GROCERY": "Grocery",
+      "FLOWER_SHOP": "Flower Shop",
+      "PHARMACY": "Pharmacy",
+      "BAKERY": "Bakery",
+      "GENERAL": "General Store"
+    },
+    "logo": "Logo (Square)",
+    "preparationTime": "Preparation Time (mins)",
+    "acceptsScheduledOrders": "Accepts Scheduled Orders",
+    "deliverySlotDuration": "Slot Duration (mins)"
   },
   "hero": {
     "title": "Discover <highlight>restaurants</highlight> that deliver near you.",
@@ -136,6 +154,7 @@
     "welcomeBack": "Welcome back!",
     "joinUs": "join us to start your journey",
     "loginSubtitle": "to continue your journey with Fiestaa. Whether you're ordering food or managing a restaurant, everything you need is right here. Enter your details to proceed.",
+    "or": "or",
     "createAccount": "Create your account",
     "myRestaurants": "My Restaurants",
     "myDeliveries": "My Deliveries",
@@ -219,6 +238,8 @@
     "userProfile": "User Profile"
   },
   "restaurant": {
+    "deliveryChargesHint": "Leave empty to use default delivery charges",
+    "selectCountry": "Select Country",
     "browse": "Browse Restaurants",
     "restaurants": "Restaurants",
     "menu": "Menu",
@@ -358,7 +379,26 @@
     "unknownItem": "Unknown Item",
     "quantityLabel": "Quantity:",
     "reorderItems": "Select items to reorder",
-    "specialInstructionsLabel": "Special Instructions:"
+    "specialInstructionsLabel": "Special Instructions:",
+    "scheduling": {
+      "title": "Delivery Timing",
+      "asap": "ASAP (Now)",
+      "schedule": "Schedule for later",
+      "selectDate": "Select Date",
+      "selectSlot": "Select Time Slot"
+    },
+    "substitution": {
+      "title": "If an item is out of stock:",
+      "contact": "Contact me",
+      "substitute": "Substitute with best match",
+      "refund": "Refund item"
+    },
+    "recipient": {
+      "title": "Recipient Details",
+      "name": "Recipient Name",
+      "phone": "Recipient Phone",
+      "isGift": "This is a gift"
+    }
   },
   "driver": {
     "driver": "Driver",
@@ -458,6 +498,21 @@
       "unlimited": "unlimited",
       "linkedItem": "Linked Item",
       "default": "Default"
+    },
+    "barcode": "Barcode",
+    "brand": "Brand",
+    "sku": "SKU / Item Code",
+    "unit": "Unit (e.g., kg, pcs)",
+    "unitQuantity": "Unit Quantity",
+    "weight": "Weight",
+    "stockQuantity": "Stock Quantity",
+    "trackStock": "Track Inventory",
+    "lowStockThreshold": "Low Stock Alert Level",
+    "pricingType": "Pricing Type",
+    "pricingTypes": {
+      "FIXED": "Fixed Price",
+      "PER_UNIT": "Per Unit",
+      "WEIGHTED": "Weighted (by kg/lb)"
     }
   },
   "footer": {

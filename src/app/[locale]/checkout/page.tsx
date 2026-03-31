@@ -46,6 +46,13 @@ export default function CheckoutPage() {
     id: string;
   } | null>(null);
   const [comment, setComment] = useState("");
+  const [scheduledDate, setScheduledDate] = useState<string>("");
+  const [scheduledSlot, setScheduledSlot] = useState<string>("");
+  const [substitutionPref, setSubstitutionPref] = useState<string>("contact");
+  const [isGift, setIsGift] = useState(false);
+  const [recipientName, setRecipientName] = useState("");
+  const [recipientPhone, setRecipientPhone] = useState("");
+  const [isScheduled, setIsScheduled] = useState(false);
 
   const { fetchOrders } = useOrderStore();
   const { formatCurrency: formatCurrencyGlobal } = useCurrency();
@@ -350,18 +357,31 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           userId: user.id,
           restaurantId: restaurant.id,
-          items: items.map((item) => ({
-            menuItemId: item.menuItemId,
-            quantity: item.quantity,
-            price: item.price,
-            name: item.name,
-            options: item.selectedAddons || [],
-            addonsTotal: item.addonsTotal || 0,
-          })),
+          items: items.map((item) => {
+            const options = [...(item.selectedAddons || [])];
+            // If there's a note in item.options, add it to options array
+            if (item.options?.notes) {
+              options.push({ note: item.options.notes } as any);
+            }
+            return {
+              menuItemId: item.menuItemId,
+              quantity: item.quantity,
+              price: item.price,
+              name: item.name,
+              options: options,
+              addonsTotal: item.addonsTotal || 0,
+            };
+          }),
           totalAmount: total, // Total includes delivery charges
           selectedAddress: deliveryAddressString,
           specialInstructions: comment || "",
-          paymentMethod: selectedPayment, // Include special instructions (optional)
+          paymentMethod: selectedPayment, 
+          orderVertical: restaurant?.storeType || "RESTAURANT",
+          substitutionPref,
+          scheduledDate: isScheduled ? scheduledDate : null,
+          scheduledSlot: isScheduled ? scheduledSlot : null,
+          recipientName: isGift ? recipientName : null,
+          recipientPhone: isGift ? recipientPhone : null,
         }),
       });
 
@@ -604,6 +624,124 @@ export default function CheckoutPage() {
                   placeholder={tOrder('specialInstructionsPlaceholder')}
                   className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                 />
+              </div>
+
+              {/* Substitution Preference - Only for Non-Restaurant */}
+              {restaurant?.storeType !== 'RESTAURANT' && (
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <h2 className="text-xl font-semibold mb-4">{tOrder('substitution.title')}</h2>
+                  <div className="space-y-3">
+                    {['contact', 'substitute', 'refund'].map((pref) => (
+                      <label key={pref} className="flex items-center space-x-3 cursor-pointer p-3 border rounded-lg hover:bg-gray-50 transition-colors">
+                        <input
+                          type="radio"
+                          name="substitutionPref"
+                          value={pref}
+                          checked={substitutionPref === pref}
+                          onChange={(e) => setSubstitutionPref(e.target.value)}
+                          className="form-radio text-primary"
+                        />
+                        <span className="text-gray-700">{tOrder(`substitution.${pref}`)}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Scheduling Section */}
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h2 className="text-xl font-semibold mb-4">{tOrder('scheduling.title')}</h2>
+                <div className="flex gap-4 mb-6">
+                  <button
+                    onClick={() => setIsScheduled(false)}
+                    className={`flex-1 py-3 px-4 rounded-lg border text-center transition-all ${!isScheduled ? 'border-primary bg-primary/5 text-primary font-bold' : 'border-gray-200 text-gray-500'}`}
+                  >
+                    {tOrder('scheduling.asap')}
+                  </button>
+                  <button
+                    onClick={() => setIsScheduled(true)}
+                    className={`flex-1 py-3 px-4 rounded-lg border text-center transition-all ${isScheduled ? 'border-primary bg-primary/5 text-primary font-bold' : 'border-gray-200 text-gray-500'}`}
+                  >
+                    {tOrder('scheduling.schedule')}
+                  </button>
+                </div>
+
+                {isScheduled && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{tOrder('scheduling.selectDate')}</label>
+                      <input
+                        type="date"
+                        min={new Date().toISOString().split('T')[0]}
+                        value={scheduledDate}
+                        onChange={(e) => setScheduledDate(e.target.value)}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{tOrder('scheduling.selectSlot')}</label>
+                      <select
+                        value={scheduledSlot}
+                        onChange={(e) => setScheduledSlot(e.target.value)}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                      >
+                        <option value="">{tOrder('scheduling.selectSlot')}</option>
+                        <option value="09:00 - 10:00">09:00 AM - 10:00 AM</option>
+                        <option value="10:00 - 11:00">10:00 AM - 11:00 AM</option>
+                        <option value="11:00 - 12:00">11:00 AM - 12:00 PM</option>
+                        <option value="12:00 - 13:00">12:00 PM - 01:00 PM</option>
+                        <option value="13:00 - 14:00">01:00 PM - 02:00 PM</option>
+                        <option value="14:00 - 15:00">02:00 PM - 03:00 PM</option>
+                        <option value="15:00 - 16:00">03:00 PM - 04:00 PM</option>
+                        <option value="16:00 - 17:00">04:00 PM - 05:00 PM</option>
+                        <option value="17:00 - 18:00">05:00 PM - 06:00 PM</option>
+                        <option value="18:00 - 19:00">06:00 PM - 07:00 PM</option>
+                        <option value="19:00 - 20:00">07:00 PM - 08:00 PM</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Recipient Details - Gift Section */}
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold">{tOrder('recipient.title')}</h2>
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isGift}
+                      onChange={(e) => setIsGift(e.target.checked)}
+                      className="rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <span className="text-sm text-gray-600">{tOrder('recipient.isGift')}</span>
+                  </label>
+                </div>
+
+                {isGift && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{tOrder('recipient.name')}</label>
+                      <input
+                        type="text"
+                        value={recipientName}
+                        onChange={(e) => setRecipientName(e.target.value)}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                        placeholder="Who is this for?"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{tOrder('recipient.phone')}</label>
+                      <input
+                        type="tel"
+                        value={recipientPhone}
+                        onChange={(e) => setRecipientPhone(e.target.value)}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                        placeholder="Recipient's phone (optional)"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Payment Method */}

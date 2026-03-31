@@ -1,5 +1,7 @@
 {
   "common": {
+    "currency": "",
+    "country": "Страна",
     "noItems": "Товаров не найдено",
     "language": "Язык",
     "location": "Локация",
@@ -17,6 +19,7 @@
     "next": "Далее",
     "previous": "Предыдущий",
     "search": "Поиск",
+    "searchMenuItems": "Поиск пунктов меню",
     "filter": "Фильтр",
     "sort": "Сортировка",
     "noResults": "Результатов не найдено",
@@ -28,6 +31,7 @@
     "city": "Город",
     "area": "Район",
     "userProfile": "Профиль пользователя",
+    "vendorId": "ID поставщика",
     "updateProfile": "Обновить профиль",
     "searchPlaceholder": "Поиск ресторанов или еды...",
     "rating": "Рейтинг",
@@ -61,7 +65,8 @@
     "serviceCharge": "Сервисный сбор",
     "printReceipt": "Печать чека",
     "noCustomizations": "Для этого товара нет настроек.",
-    "activeSince": "Активен с"
+    "activeSince": "Активен с",
+    "closedDate": "Дата закрытия"
   },
   "hero": {
     "title": "Откройте для себя <highlight>рестораны</highlight>, которые доставляют рядом с вами.",
@@ -121,6 +126,7 @@
     "welcomeBack": "Добро пожаловать!",
     "joinUs": "Присоединитесь к нам",
     "loginSubtitle": "чтобы продолжить свое путешествие с Fiestaa. Заказываете еду или управляете рестораном - всё, что вам нужно, здесь. Введите свои данные, чтобы продолжить.",
+    "or": "или",
     "createAccount": "Создайте аккаунт",
     "myRestaurants": "Мои рестораны",
     "myDeliveries": "Мои доставки",
@@ -237,9 +243,6 @@
     "uploadCoverImage": "Загрузить обложку",
     "uploadMultipleImages": "Загрузить несколько изображений",
     "chainName": "Название сети",
-    "spottedDate": "Дата обнаружения",
-    "closedDate": "Дата закрытия",
-    "vendorId": "ID поставщика",
     "restaurantName": "Название ресторана",
     "selectCountry": "Выберите страну",
     "currency": "Валюта",

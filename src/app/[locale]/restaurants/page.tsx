@@ -13,7 +13,7 @@ export default async function RestaurantsPage() {
   const t = await getTranslations("restaurant");
 
 
-  // console.log(restaurants,"restaurents")
+  console.log(restaurants, "restaurents")
 
   if (error) {
     return (

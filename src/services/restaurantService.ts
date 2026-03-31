@@ -99,7 +99,15 @@ class RestaurantService {
       minimumOrder: prismaRestaurant.minimumOrder,
       spottedDate: prismaRestaurant.spottedDate?.toISOString(),
       closedDate: prismaRestaurant.closedDate?.toISOString(),
-      menuItems: prismaRestaurant.menuItems.map((item: any) => ({
+      storeType: prismaRestaurant.storeType || 'RESTAURANT',
+      logo: prismaRestaurant.logo,
+      description: prismaRestaurant.description,
+      operatingHours: prismaRestaurant.operatingHours,
+      preparationTime: prismaRestaurant.preparationTime,
+      acceptsScheduledOrders: prismaRestaurant.acceptsScheduledOrders,
+      deliverySlotDuration: prismaRestaurant.deliverySlotDuration,
+      tags: prismaRestaurant.tags,
+      menuItems: prismaRestaurant.menuItems?.map((item: any) => ({
         label: item.label,
         description: item.description,
         price: item.price,

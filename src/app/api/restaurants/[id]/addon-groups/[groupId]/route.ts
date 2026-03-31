@@ -30,8 +30,6 @@ export async function PATCH(
               isDefault: opt.isDefault,
               sortOrder: opt.sortOrder,
               isActive: opt.isActive,
-              image: opt.image || null,
-              linkedMenuItemId: opt.linkedMenuItemId || null,
             },
           });
         } else {
@@ -43,8 +41,6 @@ export async function PATCH(
               priceAdjustment: opt.priceAdjustment || 0,
               isDefault: opt.isDefault || false,
               sortOrder: opt.sortOrder || 0,
-              image: opt.image || null,
-              linkedMenuItemId: opt.linkedMenuItemId || null,
             },
           });
         }

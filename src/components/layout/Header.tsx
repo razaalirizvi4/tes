@@ -263,143 +263,142 @@ export default function Header() {
   // Note: Since `window` is only available on the client side, we use a CSS class approach to hide it instead of conditionally returning null.
 
   // Determine custom header classes for Dashboard on Desktop
-  const dashboardHeaderClass = isDashboardPage 
-    ? `hidden lg:block lg:w-[calc(100%-16rem)] ${rtl ? 'lg:right-64 lg:left-auto' : 'lg:left-64'} bg-gray-50 !shadow-none !border-b !border-gray-200` 
+  const dashboardHeaderClass = isDashboardPage
+    ? `hidden lg:block lg:w-[calc(100%-16rem)] ${rtl ? 'lg:right-64 lg:left-auto' : 'lg:left-64'} bg-gray-50 !shadow-none !border-b !border-gray-200`
     : '';
 
   return (
     <>
-      {!isAuthChecked ? null : (
-        <header
-          className={`${!isDashboardPage ? bgColor : ''} fixed top-0 z-40 w-full shadow-md py-2 md:py-3 transition-all duration-300 ${dashboardHeaderClass} ${isDashboardPage ? 'bg-gray-50' : ''}`}
-          style={{
-            backgroundColor: isDashboardPage ? '#f9fafb' : bgColor, // Rely on className for dashboard
-            backdropFilter: isScrolled && pathname === "/" ? "blur(10px)" : "none",
-          }}  
-        >
-          <nav className="mx-auto container px-4 md:px-8">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-4 md:gap-6 flex-shrink-0">
-                {/* Hide FoodApp logo for VENDOR and SUPER_ADMIN */}
-                {user?.role !== "VENDOR" && user?.role !== "SUPER_ADMIN" && (
-                  <Link
-                    href="/"
-                    prefetch={false}
-                  >
-                    <div className=" flex justify-center">
-                      <Image
-                        src="/images/fiestaa-logo.png"
-                        alt="Fiestaa Logo"
-                        width={60}
-                        height={20}
-                        objectFit="cover"
-                        className="object-cover"
-                      />
-                    </div>
-                  </Link>
-                )}
+      <header
+        className={`${!isDashboardPage ? bgColor : ''} fixed top-0 z-40 w-full shadow-md py-2 md:py-3 transition duration-300 ${dashboardHeaderClass} ${isDashboardPage ? 'bg-gray-50' : ''}`}
+        style={{
+          backgroundColor: isDashboardPage ? '#f9fafb' : bgColor, // Rely on className for dashboard
+          backdropFilter: isScrolled && pathname === "/" ? "blur(10px)" : "none",
+        }}
+      >
+        <nav className="mx-auto container px-2 md:px-8">
+          <div className="flex justify-between items-center gap-1 md:gap-2">
+            <div className="flex items-center gap-1 md:gap-6 min-w-0 flex-1">
+              {/* Hide FoodApp logo for VENDOR and SUPER_ADMIN */}
+              {(!isAuthChecked || (user?.role !== "VENDOR" && user?.role !== "SUPER_ADMIN")) && (
+                <Link
+                  href="/"
+                  prefetch={false}
+                  className="flex-shrink-0"
+                >
+                  <div className=" flex justify-center flex-shrink-0">
+                    <Image
+                      src="/images/fiestaa-logo.png"
+                      alt="Fiestaa Logo"
+                      width={60}
+                      height={20}
+                      priority
+                      className="object-contain w-[45px] md:w-[60px] h-auto"
+                    />
+                  </div>
+                </Link>
+              )}
 
-                {!isDashboardPage && (
-                  /* Deliver to section */
-                  <div
-                    className="flex items-center text-center gap-2 ms-2 md:ms-10 cursor-pointer"
-                    onClick={toggleLocationModal}
-                  >
-                    <MdLocationOn className="text-primary w-6 h-6 md:w-7 md:h-7 bg-white border border-primary rounded-full p-1 font-bold block flex-shrink-0" />
-                    <div className="flex flex-col md:flex-row md:items-center text-start md:text-center md:gap-2">
-                      <span className="text-gray-700 text-xs md:text-sm hidden sm:block">{tHeader("deliverTo")} </span>
-                      {!selectedCity || !isReady ? (
-                        <span className="font-medium">
-                          <span className="text-primary-400">{tHeader("selectLocation")}</span>
-                        </span>
-                      ) : (
-                        <span className="text-primary-400 font-medium whitespace-nowrap overflow-visible">
-                          {selectedArea && `${selectedArea},`} {selectedCity}
+              {!isDashboardPage && (
+                /* Deliver to section */
+                <div
+                  className="flex items-center text-center gap-1 md:gap-1.5 ms-1 md:ms-10 cursor-pointer min-w-0"
+                  onClick={toggleLocationModal}
+                >
+                  <MdLocationOn className="text-primary w-5 h-5 md:w-7 md:h-7 bg-white border border-primary rounded-full p-1 font-bold block flex-shrink-0" />
+                  <div className="flex flex-col md:flex-row md:items-center text-start md:text-center md:gap-2 min-w-0">
+                    <span className="text-gray-700 text-xs md:text-sm hidden sm:block whitespace-nowrap">{tHeader("deliverTo")} </span>
+                    {!selectedCity || !isReady ? (
+                      <span className="font-medium text-[10px] xs:text-xs md:text-sm block">
+                        <span className="text-primary-400">{tHeader("selectLocation")}</span>
+                      </span>
+                    ) : (
+                      <span className="text-primary-400 font-medium text-[10px] xs:text-xs md:text-sm block whitespace-normal leading-tight">
+                        {selectedArea && `${selectedArea},`} {selectedCity}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Authentication and Cart Section */}
+            <div className="flex gap-2 md:gap-8 flex-shrink-0">
+              <div className="flex items-center gap-3 md:gap-6">
+
+                {isAuthChecked && isAuthenticated ? (
+                  <>
+                    <div className="relative flex items-center gap-4 ">
+                      {/* {display customer name if available} */}
+                      {user?.name && (
+                        <span className="text-gray-700  font-medium  text-sm  md:text-base   hidden md:block">
+                          {tHeader('hello', { name: user.name })}
                         </span>
                       )}
+                      <div
+                        onClick={toggleProfileBar}
+                        className="relative p-2 bg-white cursor-pointer hover:bg-primary text-primary border border-primary hover:text-white rounded-full  block"
+                      >
+
+                        <AiOutlineUser className="h-5 w-5 " />
+
+                        {/* <span className="font-medium text-white text-sm md:text-base  hidden md:block">
+                            {user?.name}
+                          </span> */}
+                      </div>
+
+                      {toogle && (
+                        <div
+                          ref={dropdownRef}
+                          className={`absolute top-12 ${rtl ? 'left-0' : 'right-0'} z-50`}
+                        >
+                          <AccountButton
+                            dropdownItems={dropdownItems}
+                            user={user}
+                            onItemClick={() => setToggle(false)}
+                          />
+                        </div>
+                      )}
                     </div>
+                  </>
+                ) : (
+                  <>
+                    <Link href="/auth/login" className="flex-shrink-0">
+                      <div className="bg-primary hover:bg-primary-600 flex items-center justify-center gap-1 px-3 py-1.5 md:px-4 md:py-2 rounded-full whitespace-nowrap">
+                        <span className="text-white font-medium text-[10px] xs:text-xs md:text-sm">
+                          {t("login")}
+                        </span>
+                        <span className="text-white hidden text-xs md:text-sm lg:inline">
+                          /
+                        </span>
+                        <span className="text-white font-medium text-xs md:text-sm hidden lg:inline">
+                          {t("signup")}
+                        </span>
+                      </div>
+                    </Link>
+                  </>
+                )}
+                {/* Hide cart icon for VENDOR and SUPER_ADMIN */}
+                {(!isAuthChecked || (user?.role !== "VENDOR" && user?.role !== "SUPER_ADMIN")) && (
+                  <div className="flex items-center bg-white rounded-full text-primary font-bold flex-shrink-0">
+                    <button
+                      onClick={() => setIsCartOpen(true)}
+                      className="relative p-2 md:p-2 hover:bg-primary border border-primary hover:text-white rounded-full block"
+                    >
+                      <ShoppingCartIcon className="h-5 w-5 " />
+                      {isAuthChecked && totalItems > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-primary text-white text-xs w-4 h-4 flex items-center justify-center rounded-full">
+                          {totalItems}
+                        </span>
+                      )}
+                    </button>
                   </div>
                 )}
               </div>
-
-              {/* Authentication and Cart Section */}
-              <div className="flex gap-4 md:gap-8 flex-shrink-0">
-                <div className="flex items-center gap-4 md:gap-6">
-
-                  {isAuthenticated ? (
-                    <>
-                      <div className="relative flex items-center gap-4 ">
-                        {/* {display customer name if available} */}
-                        {user?.name && (
-                          <span className="text-gray-700  font-medium  text-sm  md:text-base   hidden md:block">
-                            {tHeader('hello', { name: user.name })}
-                          </span>
-                        )}
-                        <div
-                          onClick={toggleProfileBar}
-                          className="relative p-2 bg-white cursor-pointer hover:bg-primary text-primary border border-primary hover:text-white rounded-full  block"
-                        >
-
-                          <AiOutlineUser className="h-5 w-5 " />
-
-                          {/* <span className="font-medium text-white text-sm md:text-base  hidden md:block">
-                            {user?.name}
-                          </span> */}
-                        </div>
-
-                        {toogle && (
-                          <div
-                            ref={dropdownRef}
-                            className={`absolute top-12 ${rtl ? 'left-0' : 'right-0'} z-50`}
-                          >
-                            <AccountButton
-                              dropdownItems={dropdownItems}
-                              user={user}
-                              onItemClick={() => setToggle(false)}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <Link href="/auth/login">
-                        <div className="bg-primary hover:bg-primary-600 flex items-center justify-center gap-1 px-3 py-1.5 md:px-4 md:py-2 rounded-full whitespace-nowrap">
-                          <span className="text-white font-medium text-xs md:text-sm">
-                            {t("login")}
-                          </span>
-                          <span className="text-white hidden text-xs md:text-sm lg:inline">
-                            /
-                          </span>
-                          <span className="text-white font-medium text-xs md:text-sm hidden lg:inline">
-                            {t("signup")}
-                          </span>
-                        </div>
-                      </Link>
-                    </>
-                  )}
-                  {/* Hide cart icon for VENDOR and SUPER_ADMIN */}
-                  {user?.role !== "VENDOR" && user?.role !== "SUPER_ADMIN" && (
-                    <div className="flex items-center gap-5 bg-white rounded-full text-primary font-bold">
-                      <button
-                        onClick={() => setIsCartOpen(true)}
-                        className="relative p-2 hover:bg-primary border border-primary hover:text-white rounded-full block"
-                      >
-                        <ShoppingCartIcon className="h-5 w-5 " />
-                        {totalItems > 0 && (
-                          <span className="absolute -top-1 -right-1 bg-primary text-white text-xs w-4 h-4 flex items-center justify-center rounded-full">
-                            {totalItems}
-                          </span>
-                        )}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
             </div>
-          </nav>
-        </header>
-      )}
+          </div>
+        </nav>
+      </header>
 
       {/* Location Selector Modal */}
       {isLocationModalOpen && (
@@ -420,7 +419,7 @@ export default function Header() {
 
       <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
       {/* Hide mobile cart bottom bar for VENDOR and SUPER_ADMIN */}
-      {totalItems > 0 && user?.role !== "VENDOR" && user?.role !== "SUPER_ADMIN" && (
+      {isAuthChecked && totalItems > 0 && user?.role !== "VENDOR" && user?.role !== "SUPER_ADMIN" && (
         <div className="bg-primary-600 flex justify-between px-5 items-center h-[60px] fixed bottom-[0px] w-full z-20 md:hidden">
           <div className=" flex items-center  gap-2 font-medium text-white">
             <span>{tHeader("itemsSelected")} </span>

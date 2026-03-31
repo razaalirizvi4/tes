@@ -110,6 +110,12 @@ export async function POST(request: Request) {
       specialInstructions,
       paymentMethod,
       phoneNumber,
+      orderVertical,
+      substitutionPref,
+      scheduledDate,
+      scheduledSlot,
+      recipientName,
+      recipientPhone,
     } = body;
 
     // Validate required fields
@@ -153,6 +159,12 @@ export async function POST(request: Request) {
         specialInstructions: specialInstructions,
         paymentMethod: paymentMethod,
         phoneNumber: phoneNumber,
+        orderVertical: orderVertical || "RESTAURANT",
+        substitutionPref: substitutionPref || "contact",
+        scheduledDate: scheduledDate ? new Date(scheduledDate) : null,
+        scheduledSlot: scheduledSlot || null,
+        recipientName: recipientName || null,
+        recipientPhone: recipientPhone || null,
         user: {
           connect: {
             id: userId,
@@ -195,6 +207,11 @@ export async function POST(request: Request) {
           orderId: createdOrder.id, // Link to main Order table
           totalAmount,
           createdBy: userId, // associate with the customer user id for tracking
+          notes: [
+            specialInstructions ? `Instructions: ${specialInstructions}` : null,
+            recipientName ? `GIFT FOR: ${recipientName}${recipientPhone ? ` (${recipientPhone})` : ''}` : null,
+            scheduledDate ? `SCHEDULED FOR: ${new Date(scheduledDate).toLocaleDateString()} at ${scheduledSlot || 'Anytime'}` : null
+          ].filter(Boolean).join(' | '),
           items: {
             create: items.map((item: any) => ({
               menuItemId: item.menuItemId,

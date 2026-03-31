@@ -11,6 +11,7 @@ interface RestaurantFormProps {
 const RestaurantForm: React.FC<RestaurantFormProps> = ({ restaurant, onSubmit, onCancel }) => {
   const tCommon = useTranslations('common');
   const tRestaurant = useTranslations('restaurant');
+  const tVendor = useTranslations('vendor');
   const [formData, setFormData] = useState<Partial<Restaurant>>(restaurant || {
     name: '',
     chainName: '',

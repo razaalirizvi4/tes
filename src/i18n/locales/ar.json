@@ -1,5 +1,6 @@
 {
   "common": {
+    "country": "الدولة",
     "noItems": "لا يوجد عناصر",
     "location": "الموقع",
     "language": "اللغة",
@@ -17,7 +18,9 @@
     "next": "التالي",
     "previous": "السابق",
     "search": "بحث",
+    "searchMenuItems": "عناصر قائمة البحث",
     "filter": "فلترة",
+    "vendorId": "معرف المورد",
     "sort": "ترتيب",
     "noResults": "لا توجد نتائج",
     "yes": "نعم",
@@ -61,7 +64,9 @@
     "serviceCharge": "رسوم الخدمة",
     "printReceipt": "طباعة الإيصال",
     "noCustomizations": "لا توجد تعديلات متاحة لهذا العنصر.",
-    "activeSince": "نشط منذ"
+    "activeSince": "نشط منذ",
+    "spottedDate": "تاريخ الاكتشاف",
+    "closedDate": "تاريخ الإغلاق"
   },
   "hero": {
     "title": "اكتشف <highlight>المطاعم</highlight> التي توصل بالقرب منك.",
@@ -121,6 +126,7 @@
     "welcomeBack": "أهلا وسهلا!",
     "joinUs": "انضم إلينا",
     "loginSubtitle": "لمتابعة رحلتك مع Fiestaa. سواء كنت تطلب طعامًا أو تدير مطعمًا، كل ما تحتاجه موجود هنا. أدخل بياناتك للمتابعة.",
+    "or": "أو",
     "createAccount": "أنشئ حسابك",
     "myRestaurants": "مطاعمي",
     "myDeliveries": "توصيلاتي",
@@ -237,9 +243,6 @@
     "uploadCoverImage": "رفع صورة الغلاف",
     "uploadMultipleImages": "رفع صور متعددة",
     "chainName": "اسم السلسلة",
-    "spottedDate": "تاريخ الاكتشاف",
-    "closedDate": "تاريخ الإغلاق",
-    "vendorId": "معرف المورد",
     "restaurantName": "اسم المطعم",
     "selectCountry": "اختر البلد",
     "currency": "العملة",

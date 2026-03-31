@@ -42,11 +42,13 @@ export interface CartItem {
   options?: {
     [key: string]: string | number | boolean | null;
   };
+  storeType?: string;
 }
 
 interface CartRestaurant {
   id: string;
   name: string;
+  storeType?: string;
 }
 
 interface CartState {
@@ -176,7 +178,7 @@ export const useCartStore = create<CartState>()(
           // toast.success(`Added ${item.name} to cart`);
           useCartStore.setState({
             items: [item],
-            restaurant: { id: item.restaurantId, name: item.restaurantName },
+            restaurant: { id: item.restaurantId, name: item.restaurantName, storeType: (item as any).storeType },
           });
           return;
         }

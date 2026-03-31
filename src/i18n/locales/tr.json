@@ -1,5 +1,9 @@
 {
   "common": {
+    "getCoordinatesFromGoogleMap": "Google Haritadan Koordinat Al",
+    "minOrderHint": "Çatdırılma üçün minimum sifariş məbləği tələb olunur",
+    "currency": "Para Birimi",
+    "country": "Ülke",
     "noItems": "Hiçbir ürün bulunamadı",
     "location": "Konum",
     "language": "Dil",
@@ -17,6 +21,7 @@
     "next": "İleri",
     "previous": "Önceki",
     "search": "Ara",
+    "searchMenuItems": "Menü öğelerini ara",
     "filter": "Filtre",
     "sort": "Sırala",
     "noResults": "Sonuç bulunamadı",
@@ -136,6 +141,7 @@
     "welcomeBack": "Hoş geldiniz!",
     "joinUs": "Bize katılın",
     "loginSubtitle": "Fiestaa ile yolculuğunuza devam edin. Yemek siparişi verin veya restoran yönetin, ihtiyacınız olan her şey burada. Devam etmek için bilgilerinizi girin.",
+    "or": "veya",
     "createAccount": "Hesabınızı oluşturun",
     "myRestaurants": "Restoranlarım",
     "myDeliveries": "Teslimatlarım",
@@ -219,6 +225,8 @@
     "userProfile": "Kullanıcı Profili"
   },
   "restaurant": {
+    "deliveryChargesHint": "Ülkenin standart teslimat ücretini kullanmak için boş bırakın",
+    "selectCountry": "Ülke Seçin",
     "browse": "Restoranlara Göz At",
     "restaurants": "Restoranlar",
     "menu": "Menü",

@@ -4,9 +4,14 @@ import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 
 
-export async function getRestaurants() {
+export async function getRestaurants(storeType?: string) {
   try {
+    const where: any = {};
+    if (storeType) {
+      where.storeType = storeType;
+    }
     const restaurants = await prisma.restaurant.findMany({
+      where,
       orderBy: {
         rating: 'desc',
       },
@@ -61,7 +66,15 @@ export async function createOrder(
   }>,
   totalAmount: number,
   address: string,
-  phoneNumber: string
+  phoneNumber: string,
+  params: {
+    vertical?: string;
+    substitutionPref?: string;
+    scheduledDate?: string;
+    scheduledSlot?: string;
+    recipientName?: string;
+    recipientPhone?: string;
+  } = {}
 ) {
   try {
     console.log("createOrder", userId, restaurantId, items, totalAmount, address);
@@ -80,6 +93,12 @@ export async function createOrder(
         })),
       },
       phoneNumber,
+      orderVertical: (params as any).vertical || 'RESTAURANT',
+      substitutionPref: (params as any).substitutionPref || 'contact',
+      scheduledDate: (params as any).scheduledDate ? new Date((params as any).scheduledDate) : null,
+      scheduledSlot: (params as any).scheduledSlot || null,
+      recipientName: (params as any).recipientName || null,
+      recipientPhone: (params as any).recipientPhone || null,
     } as any;
 
     const order = await prisma.order.create({

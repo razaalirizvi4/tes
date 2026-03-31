@@ -48,6 +48,7 @@ export async function POST(request: NextRequest) {
         totalAmount: 0,           // Will calculate when items added
         deliveryAddress: restaurant.address || 'Walk-in',
         orderType: 'POS',         // Distinguish from DELIVERY
+        specialInstructions: notes || "",
         orderItems: {
           create: []              // Empty initially
         }

@@ -21,7 +21,9 @@ import {
   FaHome,
   FaMotorcycle,
   FaStore,
-  FaTimesCircle
+  FaTimesCircle,
+  FaInfoCircle,
+  FaCalendarAlt
 } from "react-icons/fa";
 
 import { useTranslations } from "next-intl";
@@ -66,6 +68,8 @@ interface OrderWithCurrency extends Omit<OrderWithDetails, 'orderItems' | 'resta
     id: string;
     user: { name: string | null; email: string };
   } | null;
+  recipientName: string | null;
+  recipientPhone: string | null;
 }
 
 const OrdersPage = () => {
@@ -755,6 +759,46 @@ const OrdersPage = () => {
                             selectedOrder.user.phoneNumber}
                         </p>
                       </div>
+                      {selectedOrder.recipientName && (
+                        <div className="p-3 bg-pink-50 rounded-lg border border-pink-100 flex items-center gap-3">
+                          <div className="bg-white p-2 rounded-full shadow-sm">
+                            <span className="text-xl">🎁</span>
+                          </div>
+                          <div>
+                            <h3 className="text-xs font-bold text-pink-600 uppercase tracking-wider">
+                              {tOrder("recipient.isGift")}
+                            </h3>
+                            <p className="text-sm font-bold text-gray-900">
+                              {selectedOrder.recipientName}
+                            </p>
+                            {selectedOrder.recipientPhone && (
+                              <p className="text-xs text-gray-600">
+                                {selectedOrder.recipientPhone}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      {selectedOrder.scheduledDate && (
+                        <div className="p-3 bg-blue-50 rounded-lg border border-blue-100 flex items-center gap-3">
+                          <div className="bg-white p-2 rounded-full shadow-sm text-blue-600">
+                            <MdAccessTime className="text-lg" />
+                          </div>
+                          <div>
+                            <h3 className="text-xs font-bold text-blue-600 uppercase tracking-wider">
+                              Scheduled For
+                            </h3>
+                            <p className="text-sm font-bold text-gray-900">
+                              {format(new Date(selectedOrder.scheduledDate), "MMM d, yyyy")}
+                            </p>
+                            {selectedOrder.scheduledSlot && (
+                              <p className="text-xs text-gray-600">
+                                Slot: {selectedOrder.scheduledSlot}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )}
                       <div>
                         <h3 className="text-sm font-medium text-gray-500">
                           {tDashboard("assignedDriver")}
@@ -770,6 +814,16 @@ const OrdersPage = () => {
                           )}
                         </p>
                       </div>
+                      {selectedOrder.specialInstructions && (
+                        <div>
+                          <h3 className="text-sm font-medium text-gray-500">
+                            {tOrder("specialInstructionsLabel")}
+                          </h3>
+                          <p className="mt-1 text-sm font-semibold text-gray-900 bg-amber-50 p-2 rounded border border-amber-100 italic">
+                            "{selectedOrder.specialInstructions}"
+                          </p>
+                        </div>
+                      )}
                       <div>
                         <h3 className="text-sm font-medium text-gray-500">
                           {tOrder("orderItemsLabel")}
@@ -803,7 +857,16 @@ const OrdersPage = () => {
                                 {parsedOptions && parsedOptions.length > 0 && (
                                   <ul className="text-xs text-gray-500 ml-4 mt-0.5 space-y-0.5">
                                     {parsedOptions.map((opt: any, idx: number) => (
-                                      <li key={idx}>+ {opt.optionName || opt.name || JSON.stringify(opt)}</li>
+                                      <li key={idx}>
+                                        {opt.note ? (
+                                          <span className="text-orange-600 font-medium italic flex items-center gap-1">
+                                            <FaInfoCircle className="text-[10px]" />
+                                            Note: {opt.note}
+                                          </span>
+                                        ) : (
+                                          <span>+ {opt.optionName || opt.name || JSON.stringify(opt)}</span>
+                                        )}
+                                      </li>
                                     ))}
                                   </ul>
                                 )}
@@ -928,6 +991,12 @@ const OrdersPage = () => {
                             {order.orderType === "POS" && (
                               <span className="ml-2 px-1.5 py-0.5 text-[10px] bg-blue-100 text-blue-700 rounded font-bold">
                                 POS
+                              </span>
+                            )}
+                            {order.scheduledDate && (
+                              <span title={`Scheduled for ${format(new Date(order.scheduledDate), "MMM d")}`} className="ml-2 px-1.5 py-0.5 text-[10px] bg-green-100 text-green-700 rounded font-bold">
+                                <FaCalendarAlt className="inline mr-1" />
+                                SCH
                               </span>
                             )}
                           </td>
@@ -1076,6 +1145,56 @@ const OrdersPage = () => {
                       )}
                     </p>
                   </div>
+                  {selectedOrder.recipientName && (
+                    <div className="p-3 bg-pink-50 rounded-lg border border-pink-100 flex items-center gap-3">
+                      <div className="bg-white p-2 rounded-full shadow-sm">
+                        <span className="text-xl">🎁</span>
+                      </div>
+                      <div>
+                        <h3 className="text-xs font-bold text-pink-600 uppercase tracking-wider">
+                          {tOrder("recipient.isGift")}
+                        </h3>
+                        <p className="text-sm font-bold text-gray-900">
+                          {selectedOrder.recipientName}
+                        </p>
+                        {selectedOrder.recipientPhone && (
+                          <p className="text-xs text-gray-600">
+                            {selectedOrder.recipientPhone}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {selectedOrder.scheduledDate && (
+                    <div className="p-3 bg-blue-50 rounded-lg border border-blue-100 flex items-center gap-3">
+                      <div className="bg-white p-2 rounded-full shadow-sm text-blue-600">
+                        <MdAccessTime className="text-xl" />
+                      </div>
+                      <div>
+                        <h3 className="text-xs font-bold text-blue-600 uppercase tracking-wider">
+                          Scheduled For
+                        </h3>
+                        <p className="text-sm font-bold text-gray-900">
+                          {format(new Date(selectedOrder.scheduledDate), "MMM d, yyyy")}
+                        </p>
+                        {selectedOrder.scheduledSlot && (
+                          <p className="text-xs text-gray-600">
+                            Slot: {selectedOrder.scheduledSlot}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {selectedOrder.specialInstructions && (
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-600">
+                        {tOrder("specialInstructionsLabel")}
+                      </h3>
+                      <p className="mt-1 text-sm font-semibold text-gray-900 bg-amber-50 p-2 rounded border border-amber-100 italic">
+                        "{selectedOrder.specialInstructions}"
+                      </p>
+                    </div>
+                  )}
                   <div>
                     <h3 className="text-sm font-medium text-gray-600">{tDashboard("items")}</h3>
                     <div className="mt-2 space-y-2">
@@ -1107,7 +1226,16 @@ const OrdersPage = () => {
                             {parsedOptions && parsedOptions.length > 0 && (
                               <ul className="text-xs text-gray-500 ml-4 mt-0.5 space-y-0.5">
                                 {parsedOptions.map((opt: any, idx: number) => (
-                                  <li key={idx}>+ {opt.optionName || opt.name || JSON.stringify(opt)}</li>
+                                  <li key={idx}>
+                                    {opt.note ? (
+                                      <span className="text-orange-600 font-medium italic flex items-center gap-1">
+                                        <FaInfoCircle className="text-[10px]" />
+                                        Note: {opt.note}
+                                      </span>
+                                    ) : (
+                                      <span>+ {opt.optionName || opt.name || JSON.stringify(opt)}</span>
+                                    )}
+                                  </li>
                                 ))}
                               </ul>
                             )}

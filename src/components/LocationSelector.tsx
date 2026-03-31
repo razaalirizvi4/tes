@@ -1,14 +1,15 @@
 'use client';
 
+import { isRTL, type Locale } from "@/i18n/config";
+import { locationService } from '@/services/locationService';
+import { useRestaurantStore } from '@/store/useRestaurantStore';
+import { useLocationStore } from '@/store/useStore';
+import axios from 'axios';
+import { useLocale, useTranslations } from 'next-intl';
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { MdCancel } from 'react-icons/md';
-import axios from 'axios';
-import { useLocationStore } from '@/store/useStore';
-import { locationService } from '@/services/locationService';
-import { useRestaurantStore } from '@/store/useRestaurantStore';
-import Image from 'next/image';
-import { useTranslations } from 'next-intl';
 
 interface LocationSelectorProps {
   onLocationSelected: (city: string, area: string) => void;
@@ -19,6 +20,8 @@ interface LocationSelectorProps {
 
 export default function LocationSelector({ onLocationSelected, setIsLocationModalOpen, initialCity = '', initialArea = '' }: LocationSelectorProps) {
   const t = useTranslations('location');
+  const locale = useLocale();
+  const rtl = isRTL(locale as Locale);
   // Initialize with props value only - localStorage will be synced in useEffect
   const [selectedCity, setSelectedCity] = useState(initialCity || '');
   const [selectedArea, setSelectedArea] = useState(initialArea || '');
@@ -174,7 +177,9 @@ export default function LocationSelector({ onLocationSelected, setIsLocationModa
         <select
           value={selectedCity}
           onChange={(e) => setSelectedCity(e.target.value)}
-          className="w-full px-4 text-sm p-2 border border-primary rounded-full focus:outline-none focus:ring-0 focus:ring-white"
+          className={`w-full py-2 text-sm border border-primary rounded-full focus:outline-none focus:ring-0 focus:ring-white ${
+            rtl ? 'pr-4 pl-10 bg-[position:left_0.75rem_center]' : 'pl-4 pr-10 bg-[position:right_0.75rem_center]'
+          }`}
         >
           <option value="">{t('selectCity')}</option>
           {(citiesAndAreas ? Object.keys(citiesAndAreas) : []).map((city) => (
@@ -189,7 +194,9 @@ export default function LocationSelector({ onLocationSelected, setIsLocationModa
           value={selectedArea}
           onChange={(e) => setSelectedArea(e.target.value)}
           disabled={!selectedCity}
-          className="w-full p-2 px-4 text-sm border border-primary rounded-full focus:outline-none focus:ring-0 focus:ring-white disabled:bg-gray-100"
+          className={`w-full py-2 text-sm border border-primary rounded-full focus:outline-none focus:ring-0 focus:ring-white disabled:bg-gray-100 ${
+            rtl ? 'pr-4 pl-10 bg-[position:left_0.75rem_center]' : 'pl-4 pr-10 bg-[position:right_0.75rem_center]'
+          }`}
         >
           <option value="">{t('selectArea')}</option>
           {selectedCity &&
@@ -210,7 +217,7 @@ export default function LocationSelector({ onLocationSelected, setIsLocationModa
         </button>
 
         {/* Close Button */}
-        <div className="absolute -top-5 right-0">
+        <div className={`absolute -top-5 ${rtl ? 'left-0' : 'right-0'}`}>
           <MdCancel
             onClick={() => setIsLocationModalOpen(false)}
             className="text-primary hover:text-primary-600 text-3xl cursor-pointer"

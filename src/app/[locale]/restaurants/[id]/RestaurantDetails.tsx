@@ -1,26 +1,25 @@
 "use client";
 
-import { useEffect, useState, useRef, useMemo } from "react";
-import Image from "next/image";
+import Breadcrumb from "@/components/Breadcrumb";
+import AddonSelector from "@/components/menu/AddonSelector";
+import { useCurrency } from "@/hooks/useCurrency";
+import { isRTL, type Locale } from "@/i18n/config";
 import { useRestaurantStore } from "@/store/useRestaurantStore";
 import { useCartStore } from "@/store/useStore";
-import { Restaurant, MenuItem, SelectedAddon } from "@/types";
-import AddonSelector from "@/components/menu/AddonSelector";
-import Skeleton from "react-loading-skeleton"; // Import Skeleton
-import { IoMdAdd, IoMdRemove } from "react-icons/io";
-import { MdOutlineDelete } from "react-icons/md";
+import { MenuItem, Restaurant, SelectedAddon, SpicyLevel } from "@/types";
+import { useLocale, useTranslations } from "next-intl";
+import Image from "next/image";
+import { useEffect, useMemo, useRef, useState } from "react";
+import toast from "react-hot-toast";
 import { FaSearch } from "react-icons/fa";
-import { useCurrency } from "@/hooks/useCurrency";
-import Breadcrumb from "@/components/Breadcrumb";
-import { Swiper, SwiperSlide } from "swiper/react";
-import { Navigation } from "swiper/modules";
-import { Swiper as SwiperType } from "swiper/types";
+import { IoMdAdd, IoMdClose, IoMdRemove } from "react-icons/io";
+import { MdOutlineDelete } from "react-icons/md";
+import Skeleton from "react-loading-skeleton"; // Import Skeleton
 import "swiper/css";
 import "swiper/css/navigation";
-import { SpicyLevel } from "@/types";
-import { IoMdClose } from "react-icons/io";
-import toast from "react-hot-toast";
-import { useTranslations } from "next-intl";
+import { Navigation } from "swiper/modules";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Swiper as SwiperType } from "swiper/types";
 
 // Chili Icon Component
 const ChiliIcon = ({ level }: { level: SpicyLevel }) => {
@@ -134,21 +133,27 @@ export default function RestaurantDetails({ initialData }: Props) {
   const [specialInstructions, setSpecialInstructions] = useState("");
   const modalContentRef = useRef<HTMLDivElement>(null);
   const tCommon = useTranslations("common");
+  const tRestaurant = useTranslations("restaurant");
+  const tOrder = useTranslations("order");
+  const tCart = useTranslations("cart");
+  const locale = useLocale();
+  const rtl = isRTL(locale as Locale);
 
   useEffect(() => {
     setSelectedRestaurant(initialData);
     setRestaurant({
       id: initialData.id,
       name: initialData.name,
+      storeType: initialData.storeType,
     });
     setIsLoading(false); // Set loading to false when data is loaded
   }, [initialData, setSelectedRestaurant, setRestaurant]);
 
   const breadcrumbItems = [
-    { label: "Home", href: "/" },
+    { label: tCommon("home"), href: "/" },
     // { label: cityName || "City", href: cityName ? "/restaurants" : undefined },
     { label: initialData.city },
-    { label: "Restaurants List", href: "/restaurants" },
+    { label: tRestaurant("restaurantsList"), href: "/restaurants" },
     { label: initialData.name },
   ];
 
@@ -174,7 +179,7 @@ export default function RestaurantDetails({ initialData }: Props) {
     }
   };
 
-  const handleAddToCart = (menuItem: MenuItem, qty: number = 1, addons: SelectedAddon[] = []) => {
+  const handleAddToCart = (menuItem: MenuItem, qty: number = 1, addons: SelectedAddon[] = [], instructions: string = "") => {
     const addonsTotal = addons.reduce((sum, addon) => sum + addon.priceAdjustment, 0);
     const finalPrice = menuItem.price + addonsTotal;
 
@@ -187,8 +192,10 @@ export default function RestaurantDetails({ initialData }: Props) {
       id: "",
       restaurantId: initialData.id,
       restaurantName: initialData.name,
+      storeType: initialData.storeType || 'RESTAURANT',
       selectedAddons: addons,
       addonsTotal: addonsTotal,
+      options: instructions ? { notes: instructions } : undefined
     });
   };
 
@@ -240,7 +247,7 @@ export default function RestaurantDetails({ initialData }: Props) {
         return;
       }
 
-      handleAddToCart(selectedMenuItem, quantity, selectedAddons);
+      handleAddToCart(selectedMenuItem, quantity, selectedAddons, specialInstructions);
       handleCloseModal();
     }
   };
@@ -396,12 +403,12 @@ export default function RestaurantDetails({ initialData }: Props) {
 
               {/* Special Instructions */}
               <div className="mb-6">
-                <h3 className="text-base md:text-lg font-bold text-gray-800 mb-3">Special Instructions</h3>
+                <h3 className="text-base md:text-lg font-bold text-gray-800 mb-3">{tOrder("specialInstructions")}</h3>
                 <textarea
                   value={specialInstructions}
                   onChange={(e) => setSpecialInstructions(e.target.value)}
-                  placeholder="Add any special instructions or requests for this item..."
-                  className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm md:text-base"
+                  placeholder={tOrder("specialInstructionsPlaceholder")}
+                  className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm md:text-base text-start"
                   rows={4}
                 />
               </div>
@@ -437,7 +444,7 @@ export default function RestaurantDetails({ initialData }: Props) {
                 onClick={handleAddToCartFromModal}
                 className="bg-primary-500 hover:bg-primary-600 text-white px-6 py-3 rounded-lg font-semibold transition-all flex items-center gap-2 shadow-md"
               >
-                Add to Cart | {formatCurrency(calculateTotalPrice())}
+                {tRestaurant("addToCart")} | {formatCurrency(calculateTotalPrice())}
               </button>
             </div>
           </div>
@@ -480,7 +487,7 @@ export default function RestaurantDetails({ initialData }: Props) {
               </h1>
               <div className="flex items-center text-white mt-2">
                 <span className="mr-4">⭐️ {initialData.rating}</span>
-                <span>💰 Min. {formatCurrency(initialData.minimumOrder ?? '0')}</span>
+                <span>💰 {tRestaurant("minimumOrder")}: {formatCurrency(initialData.minimumOrder ?? '0')}</span>
               </div>
             </div>
           )}
@@ -493,10 +500,10 @@ export default function RestaurantDetails({ initialData }: Props) {
           <div className="flex flex-col md:flex-row items-stretch md:items-center md:gap-4 px-4 md:px-8 container mx-auto border-gray-300 bg-white overflow-hidden">
             {/* Search Bar */}
             <div className="relative flex-shrink-0 w-full md:w-auto md:min-w-[300px]">
-              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 z-10 pointer-events-none" />
+              <FaSearch className={`absolute ${rtl ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 text-gray-400 z-10 pointer-events-none`} />
               <input
                 type="text"
-                placeholder="Search menu items..."
+                placeholder={tCommon('searchMenuItems') + "..."}
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
@@ -527,7 +534,7 @@ export default function RestaurantDetails({ initialData }: Props) {
                       setActiveCategory(categories[0]);
                     }
                   }}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className={`absolute ${rtl ? 'left-3' : 'right-3'} top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600`}
                   aria-label="Clear search"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -635,9 +642,57 @@ export default function RestaurantDetails({ initialData }: Props) {
               <p className="text-gray-500 text-lg">{tCommon('noItems')}</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className={`grid grid-cols-1 ${initialData.storeType === 'RESTAURANT' ? 'md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'} gap-6`}>
               {filteredMenuItems.map((item) => {
                 const quantity = getItemQuantity(item.id!);
+                if (initialData.storeType !== 'RESTAURANT') {
+                  return (
+                    <div
+                      key={item.id}
+                      className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 flex flex-col cursor-pointer hover:shadow-md transition-all group"
+                      onClick={() => handleOpenModal(item)}
+                    >
+                      <div className="relative aspect-square w-full mb-3 overflow-hidden rounded-lg">
+                        <Image
+                          src={item.image || "/images/food-placeholder.jpg"}
+                          alt={item.label}
+                          fill
+                          className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute top-2 right-2 flex flex-col gap-2 z-10 items-center">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAddToCart(item);
+                            }}
+                            className="bg-white text-primary-600 p-2 rounded-full shadow-lg hover:bg-primary-50 transition-colors"
+                          >
+                            <IoMdAdd className="w-5 h-5" />
+                          </button>
+                          {quantity > 0 && (
+                            <div className="flex flex-col items-center bg-white rounded-full shadow-lg p-1">
+                              <span className="text-xs font-bold py-1">{quantity}</span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRemoveFromCart(item.label, item.id!, quantity);
+                                }}
+                                className="text-gray-400 hover:text-red-500 p-1"
+                              >
+                                {quantity === 1 ? <MdOutlineDelete className="w-4 h-4" /> : <IoMdRemove className="w-4 h-4" />}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex-1 flex flex-col">
+                        <span className="text-lg font-bold text-gray-900 leading-tight mb-1">{formatCurrency(item.price)}</span>
+                        <h3 className="text-sm font-medium text-gray-700 line-clamp-2 mb-1">{item.label}</h3>
+                        {item.unit && <span className="text-xs text-gray-400 mb-2">{item.unitQuantity} {item.unit}</span>}
+                      </div>
+                    </div>
+                  );
+                }
                 return (
                   <div
                     key={item.id}
@@ -721,7 +776,7 @@ export default function RestaurantDetails({ initialData }: Props) {
             <h2 className="text-2xl font-bold  mb-6 text-start">
               {isLoading ? <Skeleton width="50%" /> : category}
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className={`grid grid-cols-1 ${initialData.storeType === 'RESTAURANT' ? 'md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'} gap-6`}>
               {isLoading
                 ? [...Array(3)].map((_, index) => (
                   <div
@@ -742,12 +797,59 @@ export default function RestaurantDetails({ initialData }: Props) {
                   .filter((item) => item.category === category)
                   .map((item) => {
                     const quantity = getItemQuantity(item.id!);
+                    if (initialData.storeType !== 'RESTAURANT') {
+                      return (
+                        <div
+                          key={item.id}
+                          className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 flex flex-col cursor-pointer hover:shadow-md transition-all group"
+                          onClick={() => handleOpenModal(item)}
+                        >
+                          <div className="relative aspect-square w-full mb-3 overflow-hidden rounded-lg">
+                            <Image
+                              src={item.image || "/images/food-placeholder.jpg"}
+                              alt={item.label}
+                              fill
+                              className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                            <div className="absolute top-2 right-2 flex flex-col gap-2 z-10 items-center">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleAddToCart(item);
+                                }}
+                                className="bg-white text-primary-600 p-2 rounded-full shadow-lg hover:bg-primary-50 transition-colors"
+                              >
+                                <IoMdAdd className="w-5 h-5" />
+                              </button>
+                              {quantity > 0 && (
+                                <div className="flex flex-col items-center bg-white rounded-full shadow-lg p-1">
+                                  <span className="text-xs font-bold py-1">{quantity}</span>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRemoveFromCart(item.label, item.id!, quantity);
+                                    }}
+                                    className="text-gray-400 hover:text-red-500 p-1"
+                                  >
+                                    {quantity === 1 ? <MdOutlineDelete className="w-4 h-4" /> : <IoMdRemove className="w-4 h-4" />}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex-1 flex flex-col">
+                            <span className="text-lg font-bold text-gray-900 leading-tight mb-1">{formatCurrency(item.price)}</span>
+                            <h3 className="text-sm font-medium text-gray-700 line-clamp-2 mb-1">{item.label}</h3>
+                            {item.unit && <span className="text-xs text-gray-400 mb-2">{item.unitQuantity} {item.unit}</span>}
+                          </div>
+                        </div>
+                      );
+                    }
                     return (
                       <div
                         key={item.id}
                         className="bg-white hover:bg-gray-100 hover:border-gray-200 rounded-lg shadow-sm border border-gray-200 p-4 flex gap-4 cursor-pointer"
                         onClick={() => handleOpenModal(item)}
-                      //onClick={() => handleOpenModal(item)}
                       >
                         <div className="flex-1 flex flex-col">
                           <h3 className="text-lg font-semibold mb-1  text-black">

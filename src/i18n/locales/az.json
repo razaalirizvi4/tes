@@ -1,5 +1,8 @@
 {
   "common": {
+    "minOrderHint": "Çatdırılma üçün minimum sifariş məbləği tələb olunur",
+    "currency": "Valyuta",
+    "country": "Ölkə",
     "noItems": "Məhsul tapılmadı",
     "location": "Məkan",
     "work": "İş",
@@ -17,6 +20,7 @@
     "next": "Sonrakı",
     "previous": "Əvvəlki",
     "search": "Axtarış",
+    "searchMenuItems": "Menyu elementlərini axtarın",
     "filter": "Filter",
     "sort": "Sıralamaq",
     "noResults": "Nəticə tapılmadı",
@@ -136,6 +140,7 @@
     "welcomeBack": "Xoş gəlmisiniz!",
     "joinUs": "Bizə qoşulun",
     "loginSubtitle": "Fiestaa ilə səyahətinizə davam edin. Yemək sifariş edin və ya restoran idarə edin, ehtiyacınız olan hər şey buradadır. Davam etmək üçün məlumatlarınızı daxil edin.",
+    "or": "və ya",
     "createAccount": "Hesabınızı yaradın",
     "myRestaurants": "Mənim Restoranlarım",
     "myDeliveries": "Mənim Çatdırılmalarım",
@@ -219,6 +224,8 @@
     "userProfile": "İstifadəçi Profili"
   },
   "restaurant": {
+    "deliveryChargesHint": "Ölkənin standart çatdırılma haqqını istifadə etmək üçün boş buraxın",
+    "selectCountry": "Ölkə Seçin",
     "browse": "Restoranlar",
     "restaurants": "Restoranlar",
     "menu": "Menyu",

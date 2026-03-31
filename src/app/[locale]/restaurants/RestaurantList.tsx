@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Image from 'next/image';
 import { useRestaurantStore } from '@/store/useRestaurantStore';
 import { Restaurant } from '@/types';
@@ -13,6 +13,21 @@ import { useCurrency } from "@/hooks/useCurrency";
 import { formatCurrency as formatCurrencyUtil } from "@/utils/currency";
 import { useTranslations } from "next-intl";
 import { Link as LocaleLink } from "@/i18n/navigation";
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/solid';
+import { MdLocalFlorist, MdShoppingBag, MdShoppingBasket, MdRestaurant, MdBakeryDining, MdStorefront } from "react-icons/md";
+
+const STORE_TYPE_CONFIG: Record<string, { icon: any; label: string }> = {
+  ALL: { icon: MdRestaurant, label: 'All' },
+  RESTAURANT: { icon: MdRestaurant, label: 'Restaurants' },
+  GROCERY: { icon: MdShoppingBasket, label: 'Groceries' },
+  FLOWER_SHOP: { icon: MdLocalFlorist, label: 'Flowers' },
+  PHARMACY: { icon: MdStorefront, label: 'Pharmacy' },
+  BAKERY: { icon: MdBakeryDining, label: 'Patisserie' },
+  GENERAL: { icon: MdShoppingBag, label: 'General' },
+};
+
+const getCategoryConfig = (cat: string) =>
+  STORE_TYPE_CONFIG[cat] ?? { icon: MdStorefront, label: cat };
 
 // Carousel component for restaurant images
 const RestaurantImageCarousel = ({ images, restaurantName }: { images: string[], restaurantName: string }) => {
@@ -85,6 +100,54 @@ export default function RestaurantList({ initialData }: Props) {
   const tCommon = useTranslations("common");
   const [allRestaurants, setAllRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
+  const categoryScrollRef = useRef<HTMLDivElement>(null);
+  const [canScroll, setCanScroll] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [numDots, setNumDots] = useState(0);
+
+  const checkScroll = () => {
+    const el = categoryScrollRef.current;
+    if (el) {
+      const maxScroll = el.scrollWidth - el.clientWidth;
+      const isOverflowing = maxScroll > 0;
+      setCanScroll(isOverflowing);
+
+      if (isOverflowing) {
+        const pages = Math.ceil(el.scrollWidth / el.clientWidth);
+        setNumDots(pages);
+        setScrollProgress(el.scrollLeft / maxScroll);
+      }
+    }
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(checkScroll, 100);
+    window.addEventListener('resize', checkScroll);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', checkScroll);
+    };
+  }, [allRestaurants]);
+
+  const handleScrollDots = () => {
+    checkScroll();
+  };
+
+  const handleDotClick = (index: number) => {
+    const el = categoryScrollRef.current;
+    if (el) {
+      const target = index * el.clientWidth;
+      el.scrollTo({ left: target, behavior: 'smooth' });
+    }
+  };
+
+  const formatCategoryLabel = (cat: string) => {
+    if (cat === 'ALL') return tCommon('all') || 'All';
+    return getCategoryConfig(cat).label;
+  };
+
   const { selectedCity, selectedArea, restaurants, setRestaurants } = useRestaurantStore();
   const { radius: restaurantRadius, isLoading: isRadiusLoading } = useRestaurantRadius();
   const { formatCurrency: formatCurrencyGlobal } = useCurrency();
@@ -185,25 +248,95 @@ export default function RestaurantList({ initialData }: Props) {
     }
   }, [initialData, selectedCity, selectedArea, restaurantRadius, isRadiusLoading, setRestaurants]);
 
-  const handleSearch = (query: string) => {
-    if (!query.trim()) {
-      setRestaurants([...allRestaurants]);
-      return;
+  useEffect(() => {
+    let filtered = allRestaurants;
+
+    if (selectedCategory !== "ALL") {
+      filtered = filtered.filter(r => (r.storeType || "RESTAURANT") === selectedCategory);
     }
 
-    const filtered = allRestaurants.filter(({ name, cuisineType, area }) =>
-      [name, cuisineType, area].some((field) =>
-        field.toLowerCase().includes(query.toLowerCase())
-      )
-    );
+    if (searchQuery.trim()) {
+      filtered = filtered.filter(({ name, cuisineType, area }) =>
+        [name, cuisineType, area].some((field) =>
+          field?.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      );
+    }
 
     setRestaurants(filtered);
+  }, [allRestaurants, searchQuery, selectedCategory, setRestaurants]);
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+  };
+
+  const categories = ["ALL", ...Array.from(new Set(initialData.map(r => r.storeType || "RESTAURANT"))).filter(Boolean)].sort();
+
+  const formatCategoryName = (category: string) => {
+    if (category === "ALL") return tCommon('all') || "All";
+    return category
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
   };
 
   return (
     <div>
       <div className="my-10">
         <SearchBar placeholder={tCommon('search')} onSearch={handleSearch} />
+      </div>
+
+      <div className="bg-white border-b border-gray-100 shadow-sm">
+        <div className="max-w-8xl mx-auto px-4 sm:px-8">
+          <div className="py-5">
+            {/* Scrollable tiles */}
+            <div
+              ref={categoryScrollRef}
+              onScroll={handleScrollDots}
+              className="flex overflow-x-auto justify-start xl:justify-center w-full pb-2 gap-2 md:gap-3 items-center snap-x snap-mandatory"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
+              {categories.map((cat) => {
+                const config = getCategoryConfig(cat);
+                const isActive = selectedCategory === cat;
+                const Icon = config.icon;
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    aria-pressed={isActive}
+                    className={`snap-start flex-shrink-0 flex items-center justify-center gap-2.5 px-6 py-3 rounded-xl font-semibold transition-all duration-200 ${isActive
+                      ? 'bg-primary text-white hover:bg-[#85251d]'
+                      : 'bg-[#eeeeee] text-gray-800 hover:bg-[#e2e2e2]'
+                      }`}
+                  >
+                    <Icon className="w-6 h-6 flex-shrink-0" />
+                    <span className="text-base tracking-wide whitespace-nowrap">
+                      {formatCategoryLabel(cat)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {canScroll && numDots > 1 && (
+              <div className="flex justify-center gap-2 mt-4 w-full">
+                {Array.from({ length: numDots }).map((_, idx) => {
+                  const isActive = Math.round(scrollProgress * (numDots - 1)) === idx;
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => handleDotClick(idx)}
+                      className={`h-2 rounded-full transition-all duration-300 ${isActive ? 'bg-primary w-6' : 'bg-gray-300 w-2 hover:bg-gray-400'
+                        }`}
+                      aria-label={`Go to section ${idx + 1}`}
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {loading ? ( // Show skeletons while loading

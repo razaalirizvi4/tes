@@ -25,6 +25,9 @@ const RestaurantForm: React.FC<RestaurantFormProps> = ({
   vendorId,
 }) => {
   const tRestaurant = useTranslations("restaurant");
+  const tVendor = useTranslations("vendor");
+  const tCommon = useTranslations("common");
+  const tDashboard = useTranslations("dashboard");
   const [isMapOpen, setIsMapOpen] = useState(false);
   const [imageMode, setImageMode] = useState<'single' | 'multiple'>(
     restaurant?.coverImagesList && restaurant.coverImagesList.length > 0 ? 'multiple' : 'single'
@@ -55,6 +58,12 @@ const RestaurantForm: React.FC<RestaurantFormProps> = ({
     vendorId: restaurant?.vendorId || vendorId || "",
     country: restaurant?.country || "",
     currency: restaurant?.currency || "",
+    storeType: restaurant?.storeType || "RESTAURANT",
+    logo: restaurant?.logo || "",
+    description: restaurant?.description || "",
+    preparationTime: restaurant?.preparationTime || 30,
+    acceptsScheduledOrders: restaurant?.acceptsScheduledOrders ?? false,
+    deliverySlotDuration: restaurant?.deliverySlotDuration || 60,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -69,6 +78,8 @@ const RestaurantForm: React.FC<RestaurantFormProps> = ({
       minimumOrder: formData.minimumOrder && formData.minimumOrder.trim() !== '' ? formData.minimumOrder.trim() : null,
       spottedDate: formData.spottedDate ? new Date(formData.spottedDate) : null,
       closedDate: formData.closedDate ? new Date(formData.closedDate) : null,
+      preparationTime: formData.preparationTime ? parseInt(formData.preparationTime.toString()) : null,
+      deliverySlotDuration: formData.deliverySlotDuration ? parseInt(formData.deliverySlotDuration.toString()) : null,
     };
 
     // Clear the unused image field based on mode
@@ -93,6 +104,22 @@ const RestaurantForm: React.FC<RestaurantFormProps> = ({
         setFormData({ ...formData, coverImage: imageUrl || "" });
       } catch (error) {
         console.error("Error uploading image:", error);
+      } finally {
+        setUploading(false);
+      }
+    }
+  };
+
+  // Handle logo upload
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setUploading(true);
+      try {
+        const imageUrl = await uploadImageToBucket(file);
+        setFormData({ ...formData, logo: imageUrl || "" });
+      } catch (error) {
+        console.error("Error uploading logo:", error);
       } finally {
         setUploading(false);
       }
@@ -133,7 +160,7 @@ const RestaurantForm: React.FC<RestaurantFormProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              {tRestaurant('restaurantName')}*
+              {tVendor('restaurantName')}*
             </label>
             <input
               type="text"
@@ -148,7 +175,7 @@ const RestaurantForm: React.FC<RestaurantFormProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              {tRestaurant('chainName')}*
+              {tCommon('chainName')}*
             </label>
             <input
               type="text"
@@ -163,7 +190,28 @@ const RestaurantForm: React.FC<RestaurantFormProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              {tRestaurant('cuisineType')}*
+              {tCommon('storeType')}*
+            </label>
+            <select
+              value={formData.storeType}
+              onChange={(e) =>
+                setFormData({ ...formData, storeType: e.target.value as any })
+              }
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              required
+            >
+              <option value="RESTAURANT">{tCommon('storeTypes.RESTAURANT')}</option>
+              <option value="GROCERY">{tCommon('storeTypes.GROCERY')}</option>
+              <option value="FLOWER_SHOP">{tCommon('storeTypes.FLOWER_SHOP')}</option>
+              <option value="PHARMACY">{tCommon('storeTypes.PHARMACY')}</option>
+              <option value="BAKERY">{tCommon('storeTypes.BAKERY')}</option>
+              <option value="GENERAL">{tCommon('storeTypes.GENERAL')}</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              {tRestaurant('cuisineType')} / Category*
             </label>
             <input
               type="text"
@@ -172,13 +220,14 @@ const RestaurantForm: React.FC<RestaurantFormProps> = ({
                 setFormData({ ...formData, cuisineType: e.target.value })
               }
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              placeholder={formData.storeType === 'RESTAURANT' ? 'e.g. Italian, Fast Food' : 'e.g. Supermarket, Pharmacy'}
               required
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              {tRestaurant('segment')}*
+              {tCommon('segment')}*
             </label>
             <input
               type="text"
@@ -193,7 +242,7 @@ const RestaurantForm: React.FC<RestaurantFormProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              {tRestaurant('city')}*
+              {tCommon('city')}*
             </label>
             <input
               type="text"
@@ -208,7 +257,7 @@ const RestaurantForm: React.FC<RestaurantFormProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              {tRestaurant('area')}*
+              {tCommon('area')}*
             </label>
             <input
               type="text"
@@ -223,15 +272,15 @@ const RestaurantForm: React.FC<RestaurantFormProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              {tRestaurant('country')}*
+              {tCommon('country')}*
             </label>
             <select
               value={formData.country}
               onChange={(e) => {
                 const selectedCountry = e.target.value;
                 const currency = getCurrencyByCountry(selectedCountry);
-                setFormData({ 
-                  ...formData, 
+                setFormData({
+                  ...formData,
                   country: selectedCountry,
                   currency: currency
                 });
@@ -248,7 +297,7 @@ const RestaurantForm: React.FC<RestaurantFormProps> = ({
             </select>
             {formData.country && (
               <p className="mt-1 text-xs text-gray-500">
-                {tRestaurant('currency') || 'Currency'}: {formData.currency || getCurrencyByCountry(formData.country)}
+                {tCommon('currency') || 'Currency'}: {formData.currency || getCurrencyByCountry(formData.country)}
               </p>
             )}
           </div>
@@ -256,20 +305,20 @@ const RestaurantForm: React.FC<RestaurantFormProps> = ({
           <div className="col-span-2">
             <div className="flex justify-between items-center mb-2">
               <label className="block text-sm font-medium text-gray-700">
-                {tRestaurant('locationCoordinates') || 'Location Coordinates'}*
+                {tCommon('location') || 'Location Coordinates'}*
               </label>
               <button
                 type="button"
                 onClick={() => setIsMapOpen(true)}
                 className="px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
-                {tRestaurant('getCoordinatesFromGoogleMap') || 'Get Coordinates From GoogleMap'}
+                {tCommon('getCoordinatesFromGoogleMap') || 'Get Coordinates From GoogleMap'}
               </button>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  {tRestaurant('latitude')}*
+                  {tCommon('latitude')}*
                 </label>
                 <input
                   type="number"
@@ -287,7 +336,7 @@ const RestaurantForm: React.FC<RestaurantFormProps> = ({
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  {tRestaurant('longitude')}*
+                  {tCommon('longitude')}*
                 </label>
                 <input
                   type="number"
@@ -308,7 +357,21 @@ const RestaurantForm: React.FC<RestaurantFormProps> = ({
 
           <div className="col-span-2">
             <label className="block text-sm font-medium text-gray-700">
-              {tRestaurant('address')}*
+              {tRestaurant('description')}
+            </label>
+            <textarea
+              value={formData.description}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              rows={2}
+            />
+          </div>
+
+          <div className="col-span-2">
+            <label className="block text-sm font-medium text-gray-700">
+              {tCommon('address')}*
             </label>
             <textarea
               value={formData.address}
@@ -317,14 +380,33 @@ const RestaurantForm: React.FC<RestaurantFormProps> = ({
               }
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
               required
-              rows={3}
+              rows={2}
             />
+          </div>
+
+          {/* Logo Upload Section */}
+          <div className="col-span-2 md:col-span-1">
+            <label className="block text-sm font-medium text-gray-700">
+              {tCommon('logo')}
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleLogoUpload}
+              disabled={uploading}
+              className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+            />
+            {formData.logo && (
+              <div className="mt-2">
+                <img src={formData.logo} alt="Logo" className="w-16 h-16 object-cover rounded-md border" />
+              </div>
+            )}
           </div>
 
           {/* Image Upload Section */}
           <div className="col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {tRestaurant('coverImageType')}
+              {tCommon('coverImageType')}
             </label>
             <div className="flex gap-4 mb-4">
               <label className="flex items-center">
@@ -341,7 +423,7 @@ const RestaurantForm: React.FC<RestaurantFormProps> = ({
                   }}
                   className="mr-2"
                 />
-                <span className="text-sm text-gray-700">{tRestaurant('singleImage')}</span>
+                <span className="text-sm text-gray-700">{tCommon('singleImage')}</span>
               </label>
               <label className="flex items-center">
                 <input
@@ -357,14 +439,14 @@ const RestaurantForm: React.FC<RestaurantFormProps> = ({
                   }}
                   className="mr-2"
                 />
-                <span className="text-sm text-gray-700">{tRestaurant('multipleImages')}</span>
+                <span className="text-sm text-gray-700">{tCommon('multipleImages')}</span>
               </label>
             </div>
 
             {imageMode === 'single' ? (
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  {tRestaurant('uploadCoverImage')}
+                  {tCommon('uploadCoverImage')}
                 </label>
                 <input
                   type="file"
@@ -373,7 +455,7 @@ const RestaurantForm: React.FC<RestaurantFormProps> = ({
                   disabled={uploading}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 />
-                {uploading && <p className="text-sm text-gray-500">{tRestaurant('uploading') || 'Uploading...'}</p>}
+                {uploading && <p className="text-sm text-gray-500">{tCommon('uploading') || 'Uploading...'}</p>}
                 {formData.coverImage && !uploading && (
                   <div className="mt-2">
                     <img
@@ -387,7 +469,7 @@ const RestaurantForm: React.FC<RestaurantFormProps> = ({
             ) : (
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  {tRestaurant('uploadMultipleImages')}
+                  {tCommon('uploadMultipleImages')}
                 </label>
                 <input
                   type="file"
@@ -397,7 +479,7 @@ const RestaurantForm: React.FC<RestaurantFormProps> = ({
                   disabled={uploading}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 />
-                {uploading && <p className="text-sm text-gray-500">{tRestaurant('uploading') || 'Uploading...'}</p>}
+                {uploading && <p className="text-sm text-gray-500">{tCommon('uploading') || 'Uploading...'}</p>}
                 {formData.coverImagesList && formData.coverImagesList.length > 0 && !uploading && (
                   <div className="mt-4 grid grid-cols-4 gap-4">
                     {formData.coverImagesList.map((imageUrl, index) => (
@@ -471,7 +553,7 @@ const RestaurantForm: React.FC<RestaurantFormProps> = ({
               placeholder="e.g., 15.00"
             />
             <p className="mt-1 text-xs text-gray-500">
-              {tRestaurant('minOrderHint') || 'Enter the minimum order amount (without currency symbol)'}
+              {tCommon('minOrderHint') || 'Enter the minimum order amount (without currency symbol)'}
             </p>
           </div>
 
@@ -497,7 +579,7 @@ const RestaurantForm: React.FC<RestaurantFormProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              {tRestaurant('spottedDate')}
+              {tCommon('spottedDate')}
             </label>
             <input
               type="date"
@@ -511,7 +593,7 @@ const RestaurantForm: React.FC<RestaurantFormProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              {tRestaurant('closedDate')}
+              {tCommon('closedDate')}
             </label>
             <input
               type="date"
@@ -525,7 +607,49 @@ const RestaurantForm: React.FC<RestaurantFormProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              {tRestaurant('vendorId')}
+              {tCommon('preparationTime')}
+            </label>
+            <input
+              type="number"
+              value={formData.preparationTime}
+              onChange={(e) =>
+                setFormData({ ...formData, preparationTime: parseInt(e.target.value) })
+              }
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              {tCommon('deliverySlotDuration')}
+            </label>
+            <input
+              type="number"
+              value={formData.deliverySlotDuration}
+              onChange={(e) =>
+                setFormData({ ...formData, deliverySlotDuration: parseInt(e.target.value) })
+              }
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            />
+          </div>
+
+          <div>
+            <label className="flex items-center space-x-2 mt-6">
+              <input
+                type="checkbox"
+                checked={formData.acceptsScheduledOrders}
+                onChange={(e) =>
+                  setFormData({ ...formData, acceptsScheduledOrders: e.target.checked })
+                }
+                className="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              />
+              <span className="text-sm font-medium text-gray-700">{tCommon('acceptsScheduledOrders')}</span>
+            </label>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              {tCommon('vendorId')}
             </label>
             <input
               type="text"
@@ -545,7 +669,7 @@ const RestaurantForm: React.FC<RestaurantFormProps> = ({
                 }
                 className="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
               />
-              <span className="text-sm font-medium text-gray-700">{tRestaurant('active') || 'Active'}</span>
+              <span className="text-sm font-medium text-gray-700">{tDashboard('active') || 'Active'}</span>
             </label>
           </div>
         </div>
@@ -556,13 +680,13 @@ const RestaurantForm: React.FC<RestaurantFormProps> = ({
             onClick={onCancel}
             className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
           >
-            {tRestaurant('cancel') || 'Cancel'}
+            {tCommon('cancel') || 'Cancel'}
           </button>
           <button
             type="submit"
             className="rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
           >
-            {tRestaurant('save') || 'Save'}
+            {tCommon('save') || 'Save'}
           </button>
         </div>
       </form>

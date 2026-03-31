@@ -1,20 +1,21 @@
 "use client";
-import { useEffect, useState, useCallback, useRef } from "react";
-import { useParams } from "next/navigation";
-import { useTranslations } from "next-intl";
-import { useCurrency } from "@/hooks/useCurrency";
-import { formatCurrency as formatCurrencyUtil } from "@/utils/currency";
-import { supabaseClient, RealtimeChannel, DatabaseOrder } from "@/lib/supabaseClient";
-import Image from "next/image";
 import Loader from "@/components/Loader";
-import {
-  FaCheck,
-  FaStore,
-  FaMotorcycle,
-  FaHome
-} from "react-icons/fa";
-import { MdRestaurant, MdLocationOn, MdPayments } from "react-icons/md";
+import { useCurrency } from "@/hooks/useCurrency";
+import { DatabaseOrder, RealtimeChannel, supabaseClient } from "@/lib/supabaseClient";
+import { formatCurrency as formatCurrencyUtil } from "@/utils/currency";
+import { useTranslations } from "next-intl";
+import Image from "next/image";
+import { useParams } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { BiSolidFoodMenu } from "react-icons/bi";
+import {
+    FaCheck,
+    FaHome,
+    FaMotorcycle,
+    FaStore,
+    FaCalendarAlt
+} from "react-icons/fa";
+import { MdLocationOn, MdPayments, MdRestaurant } from "react-icons/md";
 
 interface MenuItem {
   image: string;
@@ -47,6 +48,8 @@ interface OrderDetailsProps {
   userEmail: string;
   restaurantCurrency?: string | null;
   specialInstructions?: string | null;
+  scheduledDate?: string | null;
+  scheduledSlot?: string | null;
   estimatedDeliveryTime?: string | null;
   restaurantCoverImage?: string | null;
   restaurantCoverImagesList?: string[] | null;
@@ -95,6 +98,8 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({
   restaurantCoverImagesList,
   onCancelOrder,
   isCancelling,
+  scheduledDate,
+  scheduledSlot,
 }) => {
   const { formatCurrency: formatCurrencyGlobal } = useCurrency();
   const tOrder = useTranslations("order");
@@ -260,6 +265,22 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({
                 </div>
               </div>
             </div>
+            {scheduledDate && (
+              <div className="bg-blue-50 p-4 border-b border-blue-100 flex items-center gap-3">
+                <div className="bg-white p-2 rounded-full shadow-sm text-blue-600">
+                  <FaCalendarAlt className="text-xl" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-bold text-blue-600 uppercase tracking-wider">
+                    {tOrder('scheduledOrder')}
+                  </h3>
+                  <p className="text-sm font-bold text-gray-900">
+                    {new Date(scheduledDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                    {scheduledSlot && ` at ${scheduledSlot}`}
+                  </p>
+                </div>
+              </div>
+            )}
             <div className="p-6">
               {/* Desktop Progress Tracker */}
               <div className="hidden md:flex items-center justify-between relative w-full">
@@ -283,7 +304,7 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({
                         <StepIcon className={isActive ? "text-lg" : "text-sm"} />
                       </div>
                       <span
-                        className={`text-xs ${isActive
+                        className={`text-xs text-center ${isActive
                           ? "font-bold text-primary-400"
                           : isCompleted
                             ? "font-semibold text-green-500"
@@ -558,6 +579,8 @@ export default function OrderDetailsPage() {
         userEmail: data.user.email,
         restaurantCurrency: data.restaurant.currency || null,
         specialInstructions: data.specialInstructions || null,
+        scheduledDate: data.scheduledDate || null,
+        scheduledSlot: data.scheduledSlot || null,
         estimatedDeliveryTime: data.restaurant.deliveryTime || null,
         restaurantCoverImage: data.restaurant.coverImage || null,
         restaurantCoverImagesList: data.restaurant.coverImagesList || null,
