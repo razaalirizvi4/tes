@@ -112,7 +112,7 @@ export default function LoginClient() {
             <div className="absolute top-6 right-6 z-20">
                 <LanguageSelectorDialog />
             </div>
-            <p>{Date.now().toString()}</p>
+
 
             <Image
                 src="/images/auth-bg.png"
@@ -200,6 +200,7 @@ export default function LoginClient() {
                                         t('login')
                                     )}
                                 </button>
+                                <p>{Date.now().toString()}</p>
                             </div>
 
                             <div className="relative flex py-0 items-center w-full px-10">
