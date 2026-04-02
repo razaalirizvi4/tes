@@ -112,6 +112,7 @@ export default function LoginClient() {
             <div className="absolute top-6 right-6 z-20">
                 <LanguageSelectorDialog />
             </div>
+            <p>{Date.now().toString()}</p>
 
             <Image
                 src="/images/auth-bg.png"
