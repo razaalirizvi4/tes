@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { authService } from "@/services/authService";
 import { useAuthStore, useCartStore } from "@/store/useStore";
 import axios from "axios";
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -18,6 +18,7 @@ export default function LoginClient() {
     const router = useRouter();
     const t = useTranslations("auth");
     const tMessages = useTranslations("messages");
+    const format = useFormatter();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
@@ -200,7 +201,14 @@ export default function LoginClient() {
                                         t('login')
                                     )}
                                 </button>
-                                <p>{Date.now().toString()}</p>
+                                <p className="text-xs text-gray-400 mt-2">
+                                    {format.dateTime(new Date(), { 
+                                        weekday: 'long', 
+                                        year: 'numeric', 
+                                        month: 'long', 
+                                        day: 'numeric' 
+                                    })}
+                                </p>
                             </div>
 
                             <div className="relative flex py-0 items-center w-full px-10">
