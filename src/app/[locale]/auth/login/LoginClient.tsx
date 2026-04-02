@@ -25,16 +25,12 @@ export default function LoginClient() {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const cartItems = useCartStore((state) => state.items);
-    const [currentTime, setCurrentTime] = useState<Date | null>(null);
+    const [currentTime, setCurrentTime] = useState<any>(null);
 
     useEffect(() => {
-        setCurrentTime(new Date());
+        // setCurrentTime(new Date().toISOString());
     }, []);
-    const getTime = async () => {
-        const location = await locationService.getCurrentLocation();
-        console.log("Location fetched at user time:", location.timestamp);
-    }
-    getTime();
+
 
 
     const handleLogin = async (e: React.FormEvent) => {
@@ -214,14 +210,7 @@ export default function LoginClient() {
                                     )}
                                 </button>
                                 <p className="text-xs text-gray-400 mt-2">
-                                    {currentTime ? format.dateTime(currentTime, {
-                                        weekday: 'long',
-                                        year: 'numeric',
-                                        month: 'long',
-                                        day: 'numeric',
-                                        hour: 'numeric',
-                                        minute: 'numeric'
-                                    }) : ''}
+                                    {currentTime ? new Date(currentTime).toLocaleString() : ''}
                                 </p>
                             </div>
 
