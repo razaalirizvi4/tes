@@ -25,10 +25,14 @@ export default function LoginClient() {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const cartItems = useCartStore((state) => state.items);
-    const [currentTime, setCurrentTime] = useState<any>(null);
+    const [currentTime, setCurrentTime] = useState<Date | null>(null);
+    const [timezone, setTimezone] = useState<string>("");
 
     useEffect(() => {
-        // setCurrentTime(new Date().toISOString());
+        setCurrentTime(new Date());
+        // Get the browser's timezone manually
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        setTimezone(tz);
     }, []);
 
 
@@ -210,7 +214,16 @@ export default function LoginClient() {
                                     )}
                                 </button>
                                 <p className="text-xs text-gray-400 mt-2">
-                                    {currentTime ? new Date(currentTime).toLocaleString() : ''}
+                                    {currentTime ? format.dateTime(currentTime, {
+                                        year: 'numeric',
+                                        month: 'short',
+                                        day: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        second: '2-digit',
+                                        timeZone: timezone || undefined
+                                    }) : ''}
+                                    {timezone && ` (${timezone})`}
                                 </p>
                             </div>
 
