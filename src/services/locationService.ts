@@ -3,6 +3,7 @@ import axios from 'axios';
 interface Coordinates {
   latitude: number;
   longitude: number;
+  timestamp?: number;
 }
 
 interface Location {
@@ -16,8 +17,8 @@ class LocationService {
 
   async getCurrentLocation(): Promise<Coordinates> {
     return new Promise((resolve, reject) => {
-      if (!navigator.geolocation) {
-        reject(new Error('Geolocation is not supported by your browser'));
+      if (typeof window === 'undefined' || !navigator.geolocation) {
+        reject(new Error('Geolocation is not supported by your browser or environment'));
         return;
       }
 
@@ -26,6 +27,7 @@ class LocationService {
           resolve({
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
+            timestamp: position.timestamp, // This is the client's system time at the moment of location fetch
           });
         },
         (error) => {
@@ -33,6 +35,27 @@ class LocationService {
         }
       );
     });
+  }
+
+  /**
+   * Gets the client's current local time.
+   * This is guaranteed to be the client's time when called in a browser environment.
+   */
+  async getCurrentTime(): Promise<Date> {
+    if (typeof window === 'undefined') {
+      throw new Error('getCurrentTime can only be called on the client side');
+    }
+    return new Date();
+  }
+
+  /**
+   * Gets the client's timezone name (e.g., "America/New_York").
+   */
+  async getClientTimezone(): Promise<string> {
+    if (typeof window === 'undefined') {
+      throw new Error('getClientTimezone can only be called on the client side');
+    }
+    return Intl.DateTimeFormat().resolvedOptions().timeZone;
   }
 
   async getAddressFromCoordinates(coordinates: Coordinates): Promise<Location> {
@@ -79,7 +102,7 @@ class LocationService {
   // }
 
 
-// This method fetches the cities and areas from the API
+  // This method fetches the cities and areas from the API
 
 
 }

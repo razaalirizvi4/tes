@@ -4,6 +4,7 @@ import Loader from "@/components/Loader";
 import { Link as LocaleLink } from "@/i18n/navigation";
 import { supabase } from "@/lib/supabase";
 import { authService } from "@/services/authService";
+import { locationService } from "@/services/locationService";
 import { useAuthStore, useCartStore } from "@/store/useStore";
 import axios from "axios";
 import { useFormatter, useTranslations } from "next-intl";
@@ -23,12 +24,18 @@ export default function LoginClient() {
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [clientTime, setClientTime] = useState<Date | null>(null);
+    const cartItems = useCartStore((state) => state.items);
+    const [currentTime, setCurrentTime] = useState<Date | null>(null);
 
     useEffect(() => {
-        setClientTime(new Date());
+        setCurrentTime(new Date());
     }, []);
-    const cartItems = useCartStore((state) => state.items);
+    const getTime = async () => {
+        const location = await locationService.getCurrentLocation();
+        console.log("Location fetched at user time:", location.timestamp);
+    }
+    getTime();
+
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -206,18 +213,16 @@ export default function LoginClient() {
                                         t('login')
                                     )}
                                 </button>
-                                {clientTime && (
-                                    <p className="text-xs text-gray-400 mt-2">
-                                        {format.dateTime(clientTime, { 
-                                            weekday: 'long', 
-                                            year: 'numeric', 
-                                            month: 'long', 
-                                            day: 'numeric',
-                                            hour: 'numeric',
-                                            minute: 'numeric'
-                                        })}
-                                    </p>
-                                )}
+                                <p className="text-xs text-gray-400 mt-2">
+                                    {currentTime ? format.dateTime(currentTime, {
+                                        weekday: 'long',
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric',
+                                        hour: 'numeric',
+                                        minute: 'numeric'
+                                    }) : ''}
+                                </p>
                             </div>
 
                             <div className="relative flex py-0 items-center w-full px-10">
