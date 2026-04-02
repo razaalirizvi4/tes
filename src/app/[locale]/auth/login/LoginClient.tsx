@@ -206,7 +206,9 @@ export default function LoginClient() {
                                         weekday: 'long', 
                                         year: 'numeric', 
                                         month: 'long', 
-                                        day: 'numeric' 
+                                        day: 'numeric',
+                                        hour: 'numeric',
+                                        minute: 'numeric'
                                     })}
                                 </p>
                             </div>
