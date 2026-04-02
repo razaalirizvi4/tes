@@ -9,7 +9,7 @@ import axios from "axios";
 import { useFormatter, useTranslations } from "next-intl";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
 import { FcGoogle } from "react-icons/fc";
@@ -23,6 +23,11 @@ export default function LoginClient() {
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [clientTime, setClientTime] = useState<Date | null>(null);
+
+    useEffect(() => {
+        setClientTime(new Date());
+    }, []);
     const cartItems = useCartStore((state) => state.items);
 
     const handleLogin = async (e: React.FormEvent) => {
@@ -201,16 +206,18 @@ export default function LoginClient() {
                                         t('login')
                                     )}
                                 </button>
-                                <p className="text-xs text-gray-400 mt-2">
-                                    {format.dateTime(new Date(), { 
-                                        weekday: 'long', 
-                                        year: 'numeric', 
-                                        month: 'long', 
-                                        day: 'numeric',
-                                        hour: 'numeric',
-                                        minute: 'numeric'
-                                    })}
-                                </p>
+                                {clientTime && (
+                                    <p className="text-xs text-gray-400 mt-2">
+                                        {format.dateTime(clientTime, { 
+                                            weekday: 'long', 
+                                            year: 'numeric', 
+                                            month: 'long', 
+                                            day: 'numeric',
+                                            hour: 'numeric',
+                                            minute: 'numeric'
+                                        })}
+                                    </p>
+                                )}
                             </div>
 
                             <div className="relative flex py-0 items-center w-full px-10">
